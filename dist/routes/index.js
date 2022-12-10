@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const router = express_1.default.Router();
 /* GET home page. */
-router.get('/', function (req, res, next) {
+router.get("/", (req, res, next) => {
     res.send({ homepage: true });
 });
 module.exports = router;

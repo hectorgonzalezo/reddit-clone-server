@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const createError = require('http-errors');
+const http_errors_1 = __importDefault(require("http-errors"));
 const express_1 = __importDefault(require("express"));
 const path = require('path');
 const cookieParser = require('cookie-parser');
@@ -22,7 +22,7 @@ app.use(express_1.default.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
-    next(createError(404));
+    next((0, http_errors_1.default)(404));
 });
 // error handler
 app.use((err, req, res, next) => {

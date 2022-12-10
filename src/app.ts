@@ -1,6 +1,5 @@
-const createError = require('http-errors');
+import createError, { HttpError } from 'http-errors';
 import express, { Request, Response, NextFunction } from 'express';
-import ErrorStatus from './types/ErrorStatus';
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
@@ -28,7 +27,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // error handler
-app.use((err: ErrorStatus, req: Request, res: Response, next: NextFunction) => {
+app.use((err: HttpError, req: Request, res: Response, next: NextFunction) => {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

@@ -9,11 +9,14 @@
     "dev": "concurrently \"npx tsc --watch\" \"nodemon ./dist/bin/www\""
   },
   "dependencies": {
+    "@types/http-errors": "^2.0.1",
+    "@types/mongodb": "^4.0.7",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "dotenv": "^16.0.3",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
+    "mongoose": "^6.8.0",
     "morgan": "~1.9.1"
   },
   "devDependencies": {
