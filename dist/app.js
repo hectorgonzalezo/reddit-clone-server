@@ -14,6 +14,10 @@ if (process.env.NODE_ENV !== "production") {
 }
 require('./mongoConfig');
 const indexRouter = require('./routes/index');
+const usersRouter = require('./routes/users');
+const communitiesRouter = require('./routes/communities');
+const postsRouter = require('./routes/posts');
+const commentsRouter = require('./routes/comments');
 const app = (0, express_1.default)();
 app.use(logger('dev'));
 app.use(express_1.default.json());
@@ -21,6 +25,10 @@ app.use(express_1.default.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express_1.default.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
+app.use('/', usersRouter);
+app.use('/', communitiesRouter);
+app.use('/', postsRouter);
+app.use('/', commentsRouter);
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
     next((0, http_errors_1.default)(404));

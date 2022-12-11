@@ -1,0 +1,20 @@
+const express = require('express');
+const postsController = require('../controllers/postController');
+const router = express.Router();
+
+// GET all posts
+router.get("/", postsController.posts_list);
+
+// GET a single post
+router.get("/", postsController.post_detail);
+
+// POST/create a single post
+router.post("/", postsController.post_create);
+
+// PUT/update a single post
+router.put("/", postsController.post_update);
+
+// DELETE a single post
+router.delete("/", postsController.post_delete);
+
+module.exports = router;
