@@ -12,6 +12,7 @@ const logger = require('morgan');
 if (process.env.NODE_ENV !== "production") {
     require("dotenv").config();
 }
+require('./mongoConfig');
 const indexRouter = require('./routes/index');
 const app = (0, express_1.default)();
 app.use(logger('dev'));

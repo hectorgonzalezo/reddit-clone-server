@@ -9,6 +9,8 @@ if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
+require('./mongoConfig');
+
 const indexRouter = require('./routes/index');
 
 const app = express();
