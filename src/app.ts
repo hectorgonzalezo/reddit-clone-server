@@ -1,4 +1,5 @@
 import createError, { HttpError } from 'http-errors';
+import { ExtendedRequest } from "./types/extendedRequest";
 import express, { Request, Response, NextFunction } from 'express';
 const path = require('path');
 const cookieParser = require('cookie-parser');
@@ -26,10 +27,17 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/', usersRouter);
-app.use('/', communitiesRouter);
-app.use('/', postsRouter);
-app.use('/', commentsRouter);
+app.use('/users/', usersRouter);
+app.use('/communities', communitiesRouter);
+app.use('/posts/', postsRouter);
+app.use(
+  "/posts/:postId/comments/:commentId",
+  (req: ExtendedRequest, res: Response, next: NextFunction) => {
+    req.postId = req.params.id;
+    next();
+  },
+  commentsRouter
+);
 
 // catch 404 and forward to error handler
 app.use((req: Request, res: Response, next: NextFunction) => {

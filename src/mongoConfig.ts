@@ -5,6 +5,8 @@ if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
+mongoose.set('strictQuery', false);
+
 mongoose.connect(process.env.MONGODB_URI as string, {
   useNewUrlParser: true,
   useUnifiedTopology: true,

@@ -28,7 +28,7 @@ export interface ICommunity extends Document {
   name: string;
   subtitle: string;
   description: string;
-  members: [] | ObjectId[] | IUser[];
+  users: [] | ObjectId[] | IUser[];
   posts: [] | ObjectId[] | IPost[];
   membersQuantity: number;
   postsQuantity: number;

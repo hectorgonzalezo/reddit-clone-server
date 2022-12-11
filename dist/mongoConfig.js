@@ -8,6 +8,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 if (process.env.NODE_ENV !== "production") {
     require("dotenv").config();
 }
+mongoose_1.default.set('strictQuery', false);
 mongoose_1.default.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
