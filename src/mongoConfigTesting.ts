@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
-require("dotenv").config();
-
 async function initializeMongoServer() {
   const mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();

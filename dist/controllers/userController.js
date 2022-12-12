@@ -21,7 +21,6 @@ const TOKEN_EXPIRATION = "24h";
 // Display details about an individual user
 // GET user
 exports.user_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    res.send({ user: `User ${req.params.id}` });
     try {
         const user = yield userModel_1.default.findById(req.params.id, { username: 1 });
         // return queried user as json
@@ -51,7 +50,6 @@ exports.user_log_in = [
         }
         passport_1.default.authenticate("local", { session: false }, (err, user) => {
             if (err || !user) {
-                console.log(err);
                 return res.status(400).json({
                     errors: [{ msg: "Incorrect username or password" }],
                     user,
@@ -140,12 +138,86 @@ exports.user_sign_up = [
 ];
 // Update an individual user
 // PUT user
-exports.user_update = (req, res) => {
-    res.send({ user: `User ${req.params.id} updated` });
-};
+exports.user_update = [
+    (0, express_validator_1.body)("username", "Username is required")
+        .trim()
+        .isLength({ min: 3, max: 25 })
+        .escape()
+        .withMessage("Username must be between 3 and 25 characters long"),
+    (0, express_validator_1.body)("email", "Email is required")
+        .trim()
+        .isEmail()
+        .withMessage("Invalid email"),
+    (0, express_validator_1.body)("password", "Password is required")
+        .trim()
+        .isLength({ min: 6 })
+        .withMessage("Password must be at least 6 characters long"),
+    (0, express_validator_1.body)("passwordConfirm", "Password confirmation is required")
+        .trim()
+        .isLength({ min: 6 })
+        .withMessage("Password must be at least 6 characters long")
+        .custom((value, { req }) => value === req.body.password)
+        .withMessage("Passwords don't match"),
+    (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+        const errors = (0, express_validator_1.validationResult)(req);
+        // if validation didn't succeed
+        if (!errors.isEmpty()) {
+            // Return errors
+            return res.status(400).send({ errors: errors.array() });
+        }
+        // If its valid
+        try {
+            // encrypt password
+            const hashedPassword = yield bcryptjs_1.default.hash(req.body.password, 10);
+            // look in db for a user with the same username
+            const existingUser = yield userModel_1.default.find({ username: req.body.username });
+            // if one exists, send error
+            if (existingUser.length !== 0) {
+                // return error and user data filled so far
+                return res.status(400).send({
+                    errors: [{ msg: "Username already exists", user: req.body }],
+                });
+            }
+            // look in db for a user with the same email
+            const existingEmail = yield userModel_1.default.find({ email: req.body.email });
+            // if one exists, send error
+            if (existingEmail.length !== 0) {
+                // return error and user data filled so far
+                return res.status(400).send({
+                    errors: [{ msg: "Email already exists", user: req.body }],
+                });
+            }
+            // if no user exists with provided username, create one
+            const newUser = new userModel_1.default({
+                username: req.body.username,
+                email: req.body.email,
+                password: hashedPassword,
+                permission: "regular",
+                _id: req.params.id,
+            });
+            // option to return updated user
+            const updateOption = {
+                new: true,
+                upsert: true,
+                rawResult: true,
+            };
+            // update user in database
+            const updatedUser = yield userModel_1.default.findByIdAndUpdate(req.params.id, newUser, updateOption);
+            return res.json({ user: updatedUser.value });
+        }
+        catch (err) {
+            return next(err);
+        }
+    }),
+];
 // Display details about an individual user
 // DELETE user
-exports.user_delete = (req, res) => {
-    res.send({ user: `User ${req.params.id} deleted` });
+exports.user_delete = (req, res, next) => {
+    userModel_1.default.findByIdAndDelete(req.params.id, (err) => {
+        if (err) {
+            return next(err);
+        }
+        res.json({ response: `deleted user ${req.params.id}` });
+    });
 };
 //# sourceMappingURL=userController.js.map

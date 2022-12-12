@@ -7,6 +7,7 @@ export interface IUser extends Document {
   permission: "regular" | "admin";
   icon?: string;
   communities: [] | ObjectId[] | ICommunity[];
+  _id?: string | ObjectId;
 }
 
 export interface IPost extends Document {

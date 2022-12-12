@@ -2,6 +2,7 @@ const request = require("supertest");
 const express = require("express");
 const users = require('../../routes/users');
 import bcrypt from 'bcryptjs';
+import async from 'async';
 const initializeMongoServer = require('../../mongoConfigTesting');
 import User from '../../models/userModel';
 
@@ -13,23 +14,34 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use("/", users);
 
+let adminUserId: string;
+let regularUserId: string;
+
 
 // Add user to mock database
 beforeAll(async () => {
   const hashedPassword = await bcrypt.hash('hashedPassword', 10);
 
-  const newUser = new User({
+  const adminUser = new User({
     username: 'mock',
     email: 'mock@mock.com',
     password: hashedPassword,
+    permission: "admin",
+  });
+
+  const regularUser = new User({
+    username: 'mocka',
+    email: 'mocka@mocka.com',
+    password: hashedPassword,
     permission: "regular",
-});
-  const user = await newUser.save();
-  console.log(user)
+  });
+  const users = await Promise.all([adminUser.save(), regularUser.save()]);
+  adminUserId = users[0]._id.toString();
+  regularUserId = users[1]._id.toString();
 });
 
 
-describe("User", () => {
+describe("User GET", () => {
   test("Get info about a user impossible without authorization", async () => {
     const res = await request(app).get('/1234');
     expect(res.status).toEqual(403);
@@ -40,40 +52,397 @@ describe("User", () => {
     });
   });
 
-  test.skip("Get info about a user if authorized", async () => {
-    const res = await request(app).get('/1234');
-    expect(res.status).toEqual(403);
-    expect(/.+\/json/.test(res.type)).toBe(true);
-    // returns error if user is not authorized
-    expect(res.body).toEqual({
-      errors: [{ msg: "Only administrators can get info about users" }],
-    });
-  });
-
-  test("Update a user", async () => {
-    const res = await request(app)
-      .put("/1234")
+  test("Get info about a user if authorized", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
       .set("Content-Type", "application/json")
       .set("Accept", "application/json")
       .send({
-        username: "lertir",
+        username: "mock",
+        password: "hashedPassword",
+      });
+    
+    const { token } = logIn.body;
+    const userId = logIn.body.user._id;
+
+    // query user with admin token
+    const res = await request(app)
+      .get(`/${userId}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    expect(res.body.user._id).toBe(userId)
+    expect(res.body.user.username).toBe("mock")
+  });
+
+
+
+});
+
+describe("User update", () => {
+  
+  test("Update a user not allowed without admin permission", async () => {
+    const res = await request(app)
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({
+        username: "updated",
+        email: "updated@mock.com",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
+
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only administrators can update users" }],
+    });
+  });
+
+  test("Update a user allowed with admin permission", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .set("Accept", "application/json")
+      .send({
+        username: "updated",
+        email: "updated@mock.com",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
+
+    // return ok status code
+    expect(res.status).toEqual(200);
+
+    // return user and token
+    expect(res.body).toHaveProperty("user");
+    expect(res.body.user.username).toBe("updated");
+    expect(res.body.user.email).toBe("updated@mock.com");
+    expect(res.body.user.permission).toBe("regular");
+    expect(res.body.user.communities).toEqual([]);
+
+    // As user it not signed it, no token should be returned
+    expect(res.body).not.toHaveProperty("token");
+  });
+
+   // invalid username
+   test("Update user with short username", async () => {
+        // log in and get token
+        const logIn = await request(app)
+        .post("/log-in")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json")
+        .send({
+          username: "mock",
+          password: "hashedPassword",
+        });
+  
+      const { token } = logIn.body;
+  
+    const res = await request(app)
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        username: "ju",
         email: "mock@mock.com",
         password: "123456",
         passwordConfirm: "123456",
       });
-;
-    expect(res.status).toEqual(200);
-    expect(/.+\/json/.test(res.type)).toBe(true);
-    expect(res.body).toEqual({ user: "User 1234 updated" });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Username must be between 3 and 25 characters long");
   });
 
-  test("Delete a user", async () => {
-    const res = await request(app).delete('/1234');
-    expect(res.status).toEqual(200);
-    expect(/.+\/json/.test(res.type)).toBe(true);
-    expect(res.body).toEqual({ user: "User 1234 deleted" });
+  test("Update user with already existing username", async () => {
+        // log in and get token
+        const logIn = await request(app)
+        .post("/log-in")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json")
+        .send({
+          username: "mock",
+          password: "hashedPassword",
+        });
+  
+      const { token } = logIn.body;
+  
+    const res = await request(app)
+    .put(`/${regularUserId}`)
+    .set("Content-Type", "application/json")
+    .set("Accept", "application/json")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      username: "mock",
+      email: "mock1@mock1.com",
+      password: "123456",
+      passwordConfirm: "123456",
+    });
+
+  // return Bad request error code
+  expect(res.status).toEqual(400);
+  // returns error if user is too short
+  expect(res.body.errors).not.toBe(undefined);
+  expect(res.body.errors[0].msg).toEqual("Username already exists");
   });
-});
+
+
+  // invalid email
+  test("Update user with invalid email", async () => {
+        // log in and get token
+        const logIn = await request(app)
+        .post("/log-in")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json")
+        .send({
+          username: "mock",
+          password: "hashedPassword",
+        });
+  
+      const { token } = logIn.body;
+  
+    const res = await request(app)
+    .put(`/${regularUserId}`)
+    .set("Content-Type", "application/json")
+    .set("Accept", "application/json")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      username: "juan",
+      email: "mockmock",
+      password: "123456",
+      passwordConfirm: "123456",
+    });
+
+  // return Bad request error code
+  expect(res.status).toEqual(400);
+  // returns error if user is too short
+  expect(res.body.errors).not.toBe(undefined);
+  expect(res.body.errors[0].msg).toEqual("Invalid email");
+  });
+
+  test("Update user with already existing email", async () => {
+        // log in and get token
+        const logIn = await request(app)
+        .post("/log-in")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json")
+        .send({
+          username: "mock",
+          password: "hashedPassword",
+        });
+  
+      const { token } = logIn.body;
+  
+    const res = await request(app)
+    .put(`/${regularUserId}`)
+    .set("Content-Type", "application/json")
+    .set("Accept", "application/json")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      username: "mock1",
+      email: "mock@mock.com",
+      password: "123456",
+      passwordConfirm: "123456",
+    });
+
+  // return Bad request error code
+  expect(res.status).toEqual(400);
+  // returns error if user is too short
+  expect(res.body.errors).not.toBe(undefined);
+  expect(res.body.errors[0].msg).toEqual("Email already exists");
+  });
+
+
+  // invalid password
+  test("Update user with short password", async () => {
+        // log in and get token
+        const logIn = await request(app)
+        .post("/log-in")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json")
+        .send({
+          username: "mock",
+          password: "hashedPassword",
+        });
+  
+      const { token } = logIn.body;
+  
+    const res = await request(app)
+    .put(`/${regularUserId}`)
+    .set("Content-Type", "application/json")
+    .set("Accept", "application/json")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      username: "juanpa",
+      email: "mock@mock.com",
+      password: "1234",
+      passwordConfirm: "1234",
+    });
+
+  // return Bad request error code
+  expect(res.status).toEqual(400);
+  // returns error if user is too short
+  expect(res.body.errors).not.toBe(undefined);
+  expect(res.body.errors[0].msg).toEqual("Password must be at least 6 characters long");
+  });
+
+  test("Update user with short password confirm", async () => {
+        // log in and get token
+        const logIn = await request(app)
+        .post("/log-in")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json")
+        .send({
+          username: "mock",
+          password: "hashedPassword",
+        });
+  
+      const { token } = logIn.body;
+  
+    const res = await request(app)
+    .put(`/${regularUserId}`)
+    .set("Content-Type", "application/json")
+    .set("Accept", "application/json")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      username: "juanpa",
+      email: "mock@mock.com",
+      password: "123456",
+      passwordConfirm: "1234",
+    });
+
+  // return Bad request error code
+  expect(res.status).toEqual(400);
+  // returns error if user is too short
+  expect(res.body.errors).not.toBe(undefined);
+  expect(res.body.errors[0].msg).toEqual("Password must be at least 6 characters long");
+  });
+
+  // Different passwords
+  test("Update user with non matching passwords", async () => {
+        // log in and get token
+        const logIn = await request(app)
+        .post("/log-in")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json")
+        .send({
+          username: "mock",
+          password: "hashedPassword",
+        });
+  
+      const { token } = logIn.body;
+  
+    const res = await request(app)
+    .put(`/${regularUserId}`)
+    .set("Content-Type", "application/json")
+    .set("Accept", "application/json")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      username: "juanpa",
+      email: "mock@mock.com",
+      password: "123456",
+      passwordConfirm: "1234567",
+    });
+
+  // return Bad request error code
+  expect(res.status).toEqual(400);
+  // returns error if user is too short
+  expect(res.body.errors).not.toBe(undefined);
+  expect(res.body.errors[0].msg).toEqual("Passwords don't match");
+  });
+
+  // Send multiple errors 
+  test("Update user with non matching passwords", async () => {
+        // log in and get token
+        const logIn = await request(app)
+        .post("/log-in")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json")
+        .send({
+          username: "mock",
+          password: "hashedPassword",
+        });
+  
+      const { token } = logIn.body;
+  
+    const res = await request(app)
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        username: "ju",
+        email: "mock",
+        password: "123",
+        passwordConfirm: "12",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors.length).toBe(5);
+  });
+
+
+})
+describe("User DELETE", () => {
+  test("Delete a user not allow without admin permission", async () => {
+    const res = await request(app).delete(`/${regularUserId}`);
+
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only administrators can delete users" }],
+    });
+  });
+
+  test("Delete a user with admin permission", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    // query user with admin token
+    const res = await request(app)
+      .delete(`/${regularUserId}`)
+      .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toEqual(200);
+      expect(/.+\/json/.test(res.type)).toBe(true);
+      expect(res.body).toEqual({
+        response: `deleted user ${regularUserId}`
+      });
+  });
+
+})
 
 describe("User log in", () => {
 
@@ -103,7 +472,7 @@ describe("User log in", () => {
       .set("Content-Type", "application/json")
       .set("Accept", "application/json")
       .send({
-        username: "mocka",
+        username: "mockas",
         password: "hashedPassword",
       });;
 
@@ -167,7 +536,7 @@ describe("User log in", () => {
     expect(res.body).toHaveProperty("user");
     expect(res.body.user.username).toBe("mock");
     expect(res.body.user.email).toBe("mock@mock.com");
-    expect(res.body.user.permission).toBe("regular");
+    expect(res.body.user.permission).toBe("admin");
     expect(res.body.user.communities).toEqual([]);
 
     expect(res.body).toHaveProperty("token");

@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { QueryOptions } from 'mongoose';
 import passport from 'passport';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -11,7 +12,6 @@ const TOKEN_EXPIRATION = "24h";
 // Display details about an individual user
 // GET user
 exports.user_detail = async (req: Request, res: Response, next: NextFunction) => {
-  res.send({ user: `User ${req.params.id}` });
   try {
     const user = await User.findById(req.params.id, { username: 1 });
     // return queried user as json
@@ -44,7 +44,6 @@ exports.user_log_in = [
       { session: false },
       (err: Error, user: IUser) => {
         if (err || !user) {
-          console.log(err)
           return res.status(400).json({
             errors:[{ msg: "Incorrect username or password" }],
             user,
@@ -149,12 +148,98 @@ exports.user_sign_up = [
 
 // Update an individual user
 // PUT user
-exports.user_update = (req: Request, res: Response) => {
-  res.send({ user: `User ${req.params.id} updated` });
-};
+exports.user_update = [
+  body("username", "Username is required")
+    .trim()
+    .isLength({ min: 3, max: 25 })
+    .escape()
+    .withMessage("Username must be between 3 and 25 characters long"),
+  body("email", "Email is required")
+    .trim()
+    .isEmail()
+    .withMessage("Invalid email"),
+  body("password", "Password is required")
+    .trim()
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters long"),
+  body("passwordConfirm", "Password confirmation is required")
+    .trim()
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters long")
+    .custom((value, { req }) => value === req.body.password)
+    .withMessage("Passwords don't match"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    // if validation didn't succeed
+    if (!errors.isEmpty()) {
+      // Return errors
+      return res.status(400).send({ errors: errors.array() });
+    }
+
+    // If its valid
+    try {
+      // encrypt password
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
+      // look in db for a user with the same username
+      const existingUser = await User.find({ username: req.body.username });
+
+      // if one exists, send error
+      if (existingUser.length !== 0) {
+        // return error and user data filled so far
+        return res.status(400).send({
+          errors: [{ msg: "Username already exists", user: req.body }],
+        });
+      }
+
+      // look in db for a user with the same email
+      const existingEmail = await User.find({ email: req.body.email });
+
+      // if one exists, send error
+      if (existingEmail.length !== 0) {
+        // return error and user data filled so far
+        return res.status(400).send({
+          errors: [{ msg: "Email already exists", user: req.body }],
+        });
+      }
+
+      // if no user exists with provided username, create one
+      const newUser = new User({
+        username: req.body.username,
+        email: req.body.email,
+        password: hashedPassword,
+        permission: "regular",
+        _id: req.params.id,
+      });
+
+      // option to return updated user
+      const updateOption: QueryOptions & { rawResult: true } = {
+        new: true,
+        upsert: true,
+        rawResult: true,
+      };
+
+      // update user in database
+      const updatedUser = await User.findByIdAndUpdate(
+        req.params.id,
+        newUser,
+        updateOption
+      );
+
+      return res.json({ user: updatedUser.value });
+    } catch (err) {
+      return next(err);
+    }
+  },
+];
 
 // Display details about an individual user
 // DELETE user
-exports.user_delete = (req: Request, res: Response) => {
-  res.send({ user: `User ${req.params.id} deleted` });
+exports.user_delete = (req: Request, res: Response, next: NextFunction) => {
+  User.findByIdAndDelete(req.params.id, (err: Error) => {
+    if (err) {
+      return next(err);
+    }
+    res.json({ response: `deleted user ${req.params.id}` });
+  });
 };

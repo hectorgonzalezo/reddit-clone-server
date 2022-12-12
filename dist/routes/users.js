@@ -36,8 +36,48 @@ router.post("/log-in", usersController.user_log_in);
 // Sign user up
 router.post("/sign-up", usersController.user_sign_up);
 // PUT/update a single user
-router.put("/:id", usersController.user_update);
+router.put("/:id", (req, res, next) => {
+    passport_1.default.authenticate("jwt", { session: false }, (err, user) => {
+        if (err) {
+            return next(err);
+        }
+        // Only show users if user is administrator
+        if (user.permission === "admin") {
+            next();
+        }
+        else {
+            // if user is not admin, return error
+            res.status(403).send({
+                errors: [
+                    {
+                        msg: "Only administrators can update users",
+                    },
+                ],
+            });
+        }
+    })(req, res, next);
+}, usersController.user_update);
 // DELETE a single user
-router.delete("/:id", usersController.user_delete);
+router.delete("/:id", (req, res, next) => {
+    passport_1.default.authenticate("jwt", { session: false }, (err, user) => {
+        if (err) {
+            return next(err);
+        }
+        // Only show users if user is administrator
+        if (user.permission === "admin") {
+            next();
+        }
+        else {
+            // if user is not admin, return error
+            res.status(403).send({
+                errors: [
+                    {
+                        msg: "Only administrators can delete users",
+                    },
+                ],
+            });
+        }
+    })(req, res, next);
+}, usersController.user_delete);
 module.exports = router;
 //# sourceMappingURL=users.js.map
