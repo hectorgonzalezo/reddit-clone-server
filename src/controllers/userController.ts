@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { MongoError } from 'mongodb';
+import passport from 'passport';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from "express-validator";
@@ -27,7 +27,7 @@ exports.user_log_in = [
     .trim()
     .isLength({ min: 3, max: 25 })
     .escape()
-    .withMessage("User name must be between 3 and 25 characters long"),
+    .withMessage("Username must be between 3 and 25 characters long"),
   body("password")
     .trim()
     .isLength({ min: 6 })
@@ -37,9 +37,34 @@ exports.user_log_in = [
     // if validation didn't succeed
     if (!errors.isEmpty()) {
       // Return errors
-      res.status(400).send({ errors: errors.array() });
-      return;
+      return res.status(400).send({ errors: errors.array() });
     }
+    passport.authenticate(
+      "local",
+      { session: false },
+      (err: Error, user: IUser) => {
+        if (err || !user) {
+          console.log(err)
+          return res.status(400).json({
+            errors:[{ msg: "Incorrect username or password" }],
+            user,
+          });
+        }
+        req.login(user, { session: false }, (loginErr: any) => {
+          if (loginErr) {
+            res.send(loginErr);
+          }
+          // generate a signed son web token with the contents of user object and return it in the response
+          // user must be converted to JSON
+          const token = jwt.sign(
+            user.toJSON(),
+            process.env.AUTH_SECRET as string,
+            { expiresIn: TOKEN_EXPIRATION }
+          );
+          return res.json({ user, token });
+        });
+      }
+    )(req, res);
   },
 ];
 

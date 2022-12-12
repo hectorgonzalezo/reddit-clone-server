@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const passport_1 = __importDefault(require("passport"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const express_validator_1 = require("express-validator");
@@ -36,7 +37,7 @@ exports.user_log_in = [
         .trim()
         .isLength({ min: 3, max: 25 })
         .escape()
-        .withMessage("User name must be between 3 and 25 characters long"),
+        .withMessage("Username must be between 3 and 25 characters long"),
     (0, express_validator_1.body)("password")
         .trim()
         .isLength({ min: 6 })
@@ -46,9 +47,26 @@ exports.user_log_in = [
         // if validation didn't succeed
         if (!errors.isEmpty()) {
             // Return errors
-            res.status(400).send({ errors: errors.array() });
-            return;
+            return res.status(400).send({ errors: errors.array() });
         }
+        passport_1.default.authenticate("local", { session: false }, (err, user) => {
+            if (err || !user) {
+                console.log(err);
+                return res.status(400).json({
+                    errors: [{ msg: "Incorrect username or password" }],
+                    user,
+                });
+            }
+            req.login(user, { session: false }, (loginErr) => {
+                if (loginErr) {
+                    res.send(loginErr);
+                }
+                // generate a signed son web token with the contents of user object and return it in the response
+                // user must be converted to JSON
+                const token = jsonwebtoken_1.default.sign(user.toJSON(), process.env.AUTH_SECRET, { expiresIn: TOKEN_EXPIRATION });
+                return res.json({ user, token });
+            });
+        })(req, res);
     },
 ];
 // Sign up user

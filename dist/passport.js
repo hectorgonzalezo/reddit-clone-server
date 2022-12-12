@@ -21,7 +21,7 @@ passport.use(new LocalStrategy((username, password, cb) => {
             return cb(err);
         }
         if (!user) {
-            return cb(null, false, { message: "Incorrect email or password." });
+            return cb(null, false, { message: "Incorrect username" });
         }
         // compare password with hashed password in database
         bcrypt.compare(password, user.password, (compareErr, res) => {

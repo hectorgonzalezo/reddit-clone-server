@@ -1,6 +1,7 @@
 const request = require("supertest");
 const express = require("express");
 const users = require('../../routes/users');
+import bcrypt from 'bcryptjs';
 const initializeMongoServer = require('../../mongoConfigTesting');
 import User from '../../models/userModel';
 
@@ -13,16 +14,18 @@ app.use(express.json());
 app.use("/", users);
 
 
+// Add user to mock database
 beforeAll(async () => {
+  const hashedPassword = await bcrypt.hash('hashedPassword', 10);
+
   const newUser = new User({
     username: 'mock',
     email: 'mock@mock.com',
-    password: 'hashedPassword',
+    password: hashedPassword,
     permission: "regular",
 });
-  // and save it to database
-  await newUser.save();
-  return 1234;
+  const user = await newUser.save();
+  console.log(user)
 });
 
 
@@ -73,18 +76,101 @@ describe("User", () => {
 });
 
 describe("User log in", () => {
+
+  // Username is too short
+  test("Short username", async () => {
+    const res = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({
+        username: "mo",
+        password: "123456",
+      });;
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Username must be between 3 and 25 characters long");
+
+  });
+
   // If trying to log in using an invalid username
-  test.skip("Invalid username", async () => {
-    const res = await request(app).post('/log-in');
+  test("Invalid username", async () => {
+    const res = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });;
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Incorrect username or password");
+
+  });
+
+  // password is too short
+  test("Short password", async () => {
+    const res = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({
+        username: "mock",
+        password: "12",
+      });;
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Password must be at least 6 characters long");
+
   });
 
   // If trying to log in using an invalid password
-  test.skip("Invalid password", async () => {
-    const res = await request(app).post('/log-in');
+  test("Invalid password", async () => {
+    const res = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({
+        username: "mock",
+        password: "hashedPasswordWrong",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Incorrect username or password");
+
   });
 
-  test.skip("Correct log in", async () => {
-    const res = await request(app).post('/log-in');
+  test("Login successfully when writing right credentials", async () => {
+    const res = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
+
+    // return user and token
+    expect(res.body).toHaveProperty("user");
+    expect(res.body.user.username).toBe("mock");
+    expect(res.body.user.email).toBe("mock@mock.com");
+    expect(res.body.user.permission).toBe("regular");
+    expect(res.body.user.communities).toEqual([]);
+
+    expect(res.body).toHaveProperty("token");
   });
 })
 
@@ -150,7 +236,7 @@ describe("User sign up", () => {
   expect(res.body.errors[0].msg).toEqual("Invalid email");
   });
 
-  test.only("Sign up user with already existing email", async () => {
+  test("Sign up user with already existing email", async () => {
     const res = await request(app)
     .post("/sign-up")
     .set("Content-Type", "application/json")
