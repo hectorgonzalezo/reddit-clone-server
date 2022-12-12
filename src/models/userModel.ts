@@ -34,4 +34,4 @@ const UserSchema = new Schema({
   communities: [{ type: Schema.Types.ObjectId, ref: "Community" }],
 });
 
-export default mongoose.model<IUser>("UserModel", UserSchema);
+export default mongoose.model<IUser>("User", UserSchema);

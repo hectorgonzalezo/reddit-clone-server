@@ -1,15 +1,46 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
+import passport from 'passport';
 const usersController = require('../controllers/userController');
 const router = express.Router();
-
-// GET all users
-router.get("/", usersController.users_list);
+import { IUser } from 'src/types/models';
+require("../passport");
 
 // GET a single user
-router.get("/:id", usersController.user_detail);
+// only if user is authorized
+router.get(
+  "/:id",
+  (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate(
+      "jwt",
+      { session: false },
+      (err: any, user: IUser) => {
+        if (err) {
+          return next(err);
+        }
+        // Only show users if user is administrator
+        if (user.permission === "admin") {
+          next();
+        } else {
+          // if user is not admin, return error
+          res.status(403).send({
+            errors: [
+              {
+                msg: "Only administrators can get info about users",
+              },
+            ],
+          });
+        }
+      }
+    )(req, res, next);
+  },
+  usersController.user_detail
+);
 
-// POST/create a single user
-router.post("/", usersController.user_create);
+// Log user in
+router.post("/log-in", usersController.user_log_in);
+
+// Sign user up
+router.post("/sign-up", usersController.user_sign_up);
 
 // PUT/update a single user
 router.put("/:id", usersController.user_update);

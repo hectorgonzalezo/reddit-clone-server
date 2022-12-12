@@ -13,5 +13,5 @@ const PostSchema = new Schema({
     community: { type: Schema.Types.ObjectId, ref: "Community", required: true },
     comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
 });
-exports.default = mongoose_1.default.model("PostModel", PostSchema);
+exports.default = mongoose_1.default.model("Post", PostSchema);
 //# sourceMappingURL=postModel.js.map

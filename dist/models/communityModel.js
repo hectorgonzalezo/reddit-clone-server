@@ -31,5 +31,5 @@ CommunitySchema.virtual('membersQuantity').get(function () {
 CommunitySchema.virtual('postsQuantity').get(function () {
     return this.posts.length;
 });
-exports.default = mongoose_1.default.model("CommunityModel", CommunitySchema);
+exports.default = mongoose_1.default.model("Community", CommunitySchema);
 //# sourceMappingURL=communityModel.js.map

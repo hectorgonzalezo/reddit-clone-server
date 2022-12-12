@@ -34,4 +34,4 @@ CommunitySchema.virtual('postsQuantity').get(function () {
 
 
 
-export default mongoose.model<ICommunity>("CommunityModel", CommunitySchema);
+export default mongoose.model<ICommunity>("Community", CommunitySchema);

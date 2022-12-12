@@ -10,5 +10,5 @@ const CommentSchema = new Schema({
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     upVotes: { type: Number, required: false, default: 0 },
 });
-exports.default = mongoose_1.default.model("CommentModel", CommentSchema);
+exports.default = mongoose_1.default.model("Comment", CommentSchema);
 //# sourceMappingURL=commentModel.js.map

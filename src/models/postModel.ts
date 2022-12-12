@@ -12,4 +12,4 @@ const PostSchema = new Schema({
   comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
 });
 
-export default mongoose.model<IPost>("PostModel", PostSchema);
+export default mongoose.model<IPost>("Post", PostSchema);

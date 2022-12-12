@@ -9,4 +9,4 @@ const CommentSchema = new Schema({
   upVotes: { type: Number, required: false, default: 0 },
 });
 
-export default mongoose.model<IComment>("CommentModel", CommentSchema);
+export default mongoose.model<IComment>("Comment", CommentSchema);

@@ -34,5 +34,5 @@ const UserSchema = new Schema({
     icon: { type: String, required: false },
     communities: [{ type: Schema.Types.ObjectId, ref: "Community" }],
 });
-exports.default = mongoose_1.default.model("UserModel", UserSchema);
+exports.default = mongoose_1.default.model("User", UserSchema);
 //# sourceMappingURL=userModel.js.map

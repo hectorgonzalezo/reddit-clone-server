@@ -10,8 +10,8 @@
     "sourceMap": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "typeRoots" : ["./src/types", "./node_modules/@types", "types"]
+    "typeRoots" : ["./src/types", "./node_modules/@types"]
   },
   "include": ["./src/**/*", "./src/*.ts"],
-  "exclude": ["./src/types/*.ts", "src/__tests__/*.test.ts", "node_modules", ".vscode"]
+  "exclude": ["./src/types/*", "./src/__tests__/*", "node_modules", ".vscode"]
 }
