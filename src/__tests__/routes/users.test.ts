@@ -2,7 +2,6 @@ const request = require("supertest");
 const express = require("express");
 const users = require('../../routes/users');
 import bcrypt from 'bcryptjs';
-import async from 'async';
 const initializeMongoServer = require('../../mongoConfigTesting');
 import User from '../../models/userModel';
 

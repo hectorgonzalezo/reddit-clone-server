@@ -29,9 +29,10 @@ export interface ICommunity extends Document {
   name: string;
   subtitle: string;
   description: string;
+  creator: ObjectId | IUser;
   users: [] | ObjectId[] | IUser[];
   posts: [] | ObjectId[] | IPost[];
-  membersQuantity: number;
-  postsQuantity: number;
+  membersQuantity?: number;
+  postsQuantity?: number;
   icon?: string;
 }

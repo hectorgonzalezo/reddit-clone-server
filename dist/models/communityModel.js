@@ -15,12 +15,13 @@ const CommunitySchema = new Schema({
             validator: (value) => {
                 return /^[a-zA-Z0-9_]+$/.test(value);
             },
-            message: (props) => `${props.value} is not a valid name`,
+            message: (props) => "Only letters, numbers and underscore allowed in community name",
         },
         required: true,
     },
     subtitle: { type: String, minLength: 3, maxLength: 100, required: true },
     description: { type: String, minLength: 3, maxLength: 300, required: true },
+    creator: { type: Schema.Types.ObjectId, ref: "User", required: true },
     users: [{ type: Schema.Types.ObjectId, ref: "User" }],
     posts: [{ type: Schema.Types.ObjectId, ref: "Post" }],
     icon: { type: String, required: false },
