@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
+import Community from '../models/communityModel';
 const communitiesController = require('../controllers/communityController');
 const router = express.Router();
 import { IUser } from 'src/types/models';
@@ -18,7 +19,8 @@ router.post(
       "jwt",
       { session: false },
       (err: any, user: IUser) => {
-        if (err || !user) {          // if user is not admin, return error
+        if (err || !user) {
+          // if user is not authorized
           return res.status(403).send({
             errors: [
               {
@@ -26,10 +28,9 @@ router.post(
               },
             ],
           });
-          // return next(err);
         }
         req.body.userId = user._id?.toString();
-        return next(err);
+        return next();
       },
     )(req, res, next);
   },
@@ -37,7 +38,33 @@ router.post(
 );
 
 // PUT/update a single community
-router.put("/:id", communitiesController.community_update);
+router.put(
+  "/:id",
+  (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate(
+      "jwt",
+      { session: false },
+      async (err: any, user: IUser) => {
+        const community = await Community.findById(req.params.id);
+        const isUserCreator = community?.creator.toString() === user._id?.toString();
+        if (err || !user || !isUserCreator) {
+          // if user is not admin, return error
+          return res.status(403).send({
+            errors: [
+              {
+                msg: "Only the community creator can update the community",
+              },
+            ],
+          });
+        }
+        // if the users isn't the creator of community, send error
+        req.body.userId = user._id?.toString();
+        return next();
+      }
+    )(req, res, next);
+  },
+  communitiesController.community_update
+);
 
 // DELETE a single community
 router.delete("/:id", communitiesController.community_delete);
