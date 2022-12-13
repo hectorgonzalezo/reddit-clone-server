@@ -194,6 +194,11 @@ exports.community_update = [
 
 // Display details about an individual community
 // DELETE community
-exports.community_delete = (req: Request, res: Response) => {
-  res.send({ community: `Community ${req.params.id} deleted` });
+exports.community_delete = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await Community.findByIdAndDelete(req.params.id);
+    res.send({ msg: `Community ${req.params.id} deleted` });
+  } catch (err) {
+    return next(err);
+  }
 };

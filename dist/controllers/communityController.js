@@ -184,7 +184,13 @@ exports.community_update = [
 ];
 // Display details about an individual community
 // DELETE community
-exports.community_delete = (req, res) => {
-    res.send({ community: `Community ${req.params.id} deleted` });
-};
+exports.community_delete = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield communityModel_1.default.findByIdAndDelete(req.params.id);
+        res.send({ msg: `Community ${req.params.id} deleted` });
+    }
+    catch (err) {
+        return next(err);
+    }
+});
 //# sourceMappingURL=communityController.js.map

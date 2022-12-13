@@ -45,7 +45,8 @@ router.put("/:id", (req, res, next) => {
         var _a, _b;
         const community = yield communityModel_1.default.findById(req.params.id);
         const isUserCreator = (community === null || community === void 0 ? void 0 : community.creator.toString()) === ((_a = user._id) === null || _a === void 0 ? void 0 : _a.toString());
-        if (err || !user || !isUserCreator) {
+        const isUserAdmin = user.permission === 'admin';
+        if (err || !user || !isUserCreator || isUserAdmin) {
             // if user is not admin, return error
             return res.status(403).send({
                 errors: [
@@ -61,6 +62,26 @@ router.put("/:id", (req, res, next) => {
     }))(req, res, next);
 }, communitiesController.community_update);
 // DELETE a single community
-router.delete("/:id", communitiesController.community_delete);
+router.delete("/:id", (req, res, next) => {
+    passport_1.default.authenticate("jwt", { session: false }, (err, user) => __awaiter(void 0, void 0, void 0, function* () {
+        var _a, _b;
+        const community = yield communityModel_1.default.findById(req.params.id);
+        const isUserCreator = (community === null || community === void 0 ? void 0 : community.creator.toString()) === ((_a = user._id) === null || _a === void 0 ? void 0 : _a.toString());
+        const isUserAdmin = user.permission === 'admin';
+        if (err || !user || !isUserCreator || isUserAdmin) {
+            // if user is not admin, return error
+            return res.status(403).send({
+                errors: [
+                    {
+                        msg: "Only the community creator can delete the community",
+                    },
+                ],
+            });
+        }
+        // if the users isn't the creator of community, send error
+        req.body.userId = (_b = user._id) === null || _b === void 0 ? void 0 : _b.toString();
+        return next();
+    }))(req, res, next);
+}, communitiesController.community_delete);
 module.exports = router;
 //# sourceMappingURL=communities.js.map

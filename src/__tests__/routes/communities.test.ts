@@ -504,6 +504,13 @@ describe("PUT/update communities", () => {
     mockCommunityWithPostsId = community3._id.toString();
   });
 
+    // remove communities and user from database
+    afterAll(async () => {
+      await User.findByIdAndDelete(userId);
+      await Community.findByIdAndDelete(mockCommunityId);
+      await Community.findByIdAndDelete(mockCommunity2Id);
+    });
+
   test("Not allowed if user isn't logged in", async () => {
     const res = await request(app)
       .put(`/communities/${mockCommunityId}`)
@@ -782,7 +789,6 @@ describe("PUT/update communities", () => {
       .set("Authorization", `Bearer ${token}`)
       .send(updatedCommunity);
 
-    console.log(res.body);
     // return Bad request error code
     expect(res.status).toEqual(400);
     // Return error if community name already exists
@@ -810,5 +816,128 @@ describe("PUT/update communities", () => {
 
     // Return the correct community info
     expect(res.body.community.icon).toBe(updatedCommunity.icon);
+  });
+});
+
+
+
+// Delete a  community
+describe("DELETE communities", () => {
+  // Add community to mock database
+  beforeAll(async () => {
+    const hashedPassword = await bcrypt.hash("hashedPassword", 10);
+    const regularUser = new User({
+      username: "mocka",
+      email: "mocka@mocka.com",
+      password: hashedPassword,
+      permission: "regular",
+    });
+
+    const user = await regularUser.save();
+
+    const logIn = await request(app)
+      .post("/users/log-in")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    token = logIn.body.token;
+    userId = logIn.body.user._id.toString();
+
+    mockCommunity = new Community({
+      name: "mockCommunity",
+      subtitle: "Fake community",
+      description: "This is a fake community created for testing purposes",
+      creator: userId,
+      users: [],
+      posts: [],
+    });
+
+    mockCommunity2 = new Community(
+      {
+        name: "mockCommunity2",
+        subtitle: "Fake community2",
+        description: "This is a fake community created for testing purposes2",
+        creator: "123434asdfas",
+        users: [],
+        posts: [],
+      },
+      { versionKey: false }
+    );
+
+    mockCommunityWithPosts = new Community(
+      {
+        name: "mockCommunity2",
+        subtitle: "Fake community2",
+        description: "This is a fake community created for testing purposes2",
+        creator: userId,
+        users: [logIn.body.user._id],
+        posts: [logIn.body.user._id],
+      },
+      { versionKey: false }
+    );
+
+    const [community1, community2, community3] = await Promise.all([
+      mockCommunity.save(),
+      mockCommunity2.save(),
+      mockCommunityWithPosts.save(),
+    ]);
+
+    mockCommunityId = community1._id.toString();
+    mockCommunity2Id = community2._id.toString();
+    mockCommunityWithPostsId = community3._id.toString();
+  });
+
+  test("Not allowed if user isn't logged in", async () => {
+    const res = await request(app)
+      .delete(`/communities/${mockCommunityId}`);
+
+    // return unauthorized status and json
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return both mock communities
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only the community creator can delete the community" }],
+    });
+  });
+
+
+  test("Not allowed if user isn't the community creator", async () => {
+    const res = await request(app)
+      .delete(`/communities/${mockCommunity2Id}`);
+
+    // return unauthorized status and json
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return both mock communities
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only the community creator can delete the community" }],
+    });
+  });
+
+  test("Allowed for logged in regular user which is the community creator", async () => {
+    const updatedCommunity = {
+      name: "updatedMock",
+      subtitle: "updated fake community",
+      description:
+        "This is a updated fake community created for testing purposes",
+    };
+
+    const res = await request(app)
+      .delete(`/communities/${mockCommunityId}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    // return ok status and json
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return delete message
+    expect(res.body.msg).toBe(`Community ${mockCommunityId} deleted`);
+
+    // Look for community, it shouldn't be there
+    const community = await Community.findById(mockCommunityId);
+    expect(community).toBe(null);
   });
 });
