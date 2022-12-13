@@ -1,7 +1,7 @@
 const request = require("supertest");
 const express = require("express");
 const users = require("../../routes/users");
-const communities = require("../../routes/communities");
+const posts = require("../../routes/posts");
 import bcrypt from "bcryptjs";
 const initializeMongoServer = require("../../mongoConfigTesting");
 import Community from "../../models/communityModel";
@@ -15,7 +15,7 @@ initializeMongoServer();
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
-app.use("/posts/", communities);
+app.use("/posts/", posts);
 app.use("/users/", users);
 
 let token: string;
@@ -29,7 +29,7 @@ let mockPost2Id: IPost;
 
 
 describe("GET posts", () => {
-  // Add communities and user to mock database
+  // Add communities, posts and user to mock database
   beforeAll(async () => {
     // Log user in
     const hashedPassword = await bcrypt.hash("hashedPassword", 10);
@@ -94,6 +94,7 @@ describe("GET posts", () => {
     await Community.findByIdAndDelete(mockCommunityId);
   });
 
+
   test("Get all posts in database", async () => {
     const res = await request(app).get("/posts/");
 
@@ -104,5 +105,32 @@ describe("GET posts", () => {
     expect(res.body.posts.length).toBe(2);
   });
 
+  test("Get info about a particular post", async () => {
+    const res = await request(app).get(`/posts/${mockPostId}`);
 
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // Return the correct post info
+    expect(res.body.post.title).toBe(mockPost.title);
+    expect(res.body.post.text).toBe(mockPost.text);
+    expect(res.body.post.user.toString()).toBe(userId);
+    expect(res.body.post.community.toString()).toEqual(mockCommunityId);
+  });
+
+  test("Looking for a non existing post returns an error", async () => {
+    const res = await request(app).get(`/posts/123456789a123456789b1234`);
+
+    expect(res.status).toEqual(404);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // returns error if user is not authorized
+    expect(res.body.error).toEqual("No post with id 123456789a123456789b1234 found");
+  });
+
+  test("Looking for a post with a string that doesn't match an id doesn't return anything", async () => {
+    const res = await request(app).get(`/posts/12345`);
+
+    // Return not found status code
+    expect(res.status).toEqual(404);
+  });
 });

@@ -6,15 +6,15 @@ const router = express.Router();
 router.get("/", postsController.posts_list);
 
 // GET a single post
-router.get("/:id", postsController.post_detail);
+router.get("/:id([a-zA-Z0-9]{24})", postsController.post_detail);
 
 // POST/create a single post
 router.post("/", postsController.post_create);
 
 // PUT/update a single post
-router.put("/:id", postsController.post_update);
+router.put("/:id([a-zA-Z0-9]{24})", postsController.post_update);
 
 // DELETE a single post
-router.delete("/:id", postsController.post_delete);
+router.delete("/:id([a-zA-Z0-9]{24})", postsController.post_delete);
 
 module.exports = router;

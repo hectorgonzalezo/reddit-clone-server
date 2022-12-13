@@ -1,15 +1,28 @@
-const Post = require('../models/postModel');
-import { Request, Response } from 'express';
+import Post from '../models/postModel';
+import { Request, Response, NextFunction } from 'express';
 
 // List all posts in database
-exports.posts_list = (req: Request, res: Response) => {
-  res.send({ posts: "posts" });
+exports.posts_list = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const posts = await Post.find(); 
+    return res.status(200).send({ posts });
+  } catch (error) {
+    return next(error);
+  }
 };
 
 // Display details about an individual post
 // GET post
-exports.post_detail = (req: Request, res: Response) => {
-  res.send({ post: `Post ${req.params.id}` });
+exports.post_detail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const post = await Post.findById(req.params.id); 
+    if (post === null) {
+      return res.status(404).send({ error: `No post with id ${req.params.id} found` });
+    }
+    return res.status(200).send({ post });
+  } catch (error) {
+    return next(error);
+  }
 };
 
 // create an individual post
