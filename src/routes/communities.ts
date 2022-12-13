@@ -9,7 +9,7 @@ import { IUser } from 'src/types/models';
 router.get("/", communitiesController.communities_list);
 
 // GET a single community
-router.get("/:id", communitiesController.community_detail);
+router.get("/:id([a-zA-Z0-9]{24})/", communitiesController.community_detail);
 
 // POST/create a single community
 router.post(
@@ -39,7 +39,7 @@ router.post(
 
 // PUT/update a single community
 router.put(
-  "/:id",
+  "/:id([a-zA-Z0-9]{24})/",
   (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate(
       "jwt",
@@ -48,7 +48,7 @@ router.put(
         const community = await Community.findById(req.params.id);
         const isUserCreator = community?.creator.toString() === user._id?.toString();
         const isUserAdmin = user.permission === 'admin';
-        if (err || !user || !isUserCreator || isUserAdmin) {
+        if (err || !user || (!isUserCreator && !isUserAdmin)) {
           // if user is not admin, return error
           return res.status(403).send({
             errors: [
@@ -69,7 +69,7 @@ router.put(
 
 // DELETE a single community
 router.delete(
-  "/:id",
+  "/:id([a-zA-Z0-9]{24})/",
   (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate(
       "jwt",
@@ -79,7 +79,7 @@ router.delete(
         const isUserCreator =
           community?.creator.toString() === user._id?.toString();
         const isUserAdmin = user.permission === 'admin';
-        if (err || !user || !isUserCreator || isUserAdmin) {
+        if (err || !user || (!isUserCreator && !isUserAdmin)) {
           // if user is not admin, return error
           return res.status(403).send({
             errors: [

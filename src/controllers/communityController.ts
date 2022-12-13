@@ -19,9 +19,12 @@ exports.communities_list = async (req: Request, res: Response, next: NextFunctio
 exports.community_detail = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const community = await Community.findById(req.params.id); 
+    if (community === null) {
+      return res.status(404).send({ error: `No community with id ${req.params.id} found` });
+    }
     return res.status(200).send({ community });
   } catch (error) {
-    return res.status(400).send({ error: `No community with id ${req.params.id} found` });
+    return next(error);
   }
 };
 
@@ -151,8 +154,17 @@ exports.community_update = [
         });
       }
 
+
+      let previousCommunity: ICommunity;
       // Get posts and users from previous entry
-      const previousCommunity = await Community.findById(req.params.id) as ICommunity;
+      previousCommunity = await Community.findById(req.params.id) as ICommunity;
+
+      if (previousCommunity === null) {
+        // If no community is found, send error;
+        return res.status(404).send({ error: `No community with id ${req.params.id} found` });
+      }
+
+
 
       
       // If no community with that name exists, create one
@@ -165,6 +177,7 @@ exports.community_update = [
         posts: previousCommunity.posts,
         _id: req.params.id,
       };
+
       // Add icon if one was provided
       if (req.body.icon !== undefined) {
         communityObj.icon = req.body.icon;
@@ -196,8 +209,12 @@ exports.community_update = [
 // DELETE community
 exports.community_delete = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await Community.findByIdAndDelete(req.params.id);
-    res.send({ msg: `Community ${req.params.id} deleted` });
+    const community = await Community.findByIdAndDelete(req.params.id);
+    // if coummunity doesnt exist, send error
+    if (community === null) {
+      return res.status(404).send({ error: `No community with id ${req.params.id} found` }); 
+    }
+    return res.send({ msg: `Community ${req.params.id} deleted` });
   } catch (err) {
     return next(err);
   }

@@ -19,6 +19,8 @@ app.use("/users/", users);
 
 let token: string;
 let userId: string;
+let adminToken: string;
+let adminUserId: string;
 let mockCommunity: ICommunity;
 let mockCommunity2: ICommunity;
 let mockCommunityWithPosts: ICommunity;
@@ -113,12 +115,19 @@ describe("GET communities", () => {
   });
 
   test("Looking for a non existing community returns an error", async () => {
-    const res = await request(app).get(`/communities/12345`);
+    const res = await request(app).get(`/communities/123456789a123456789b1234`);
 
-    expect(res.status).toEqual(400);
+    expect(res.status).toEqual(404);
     expect(/.+\/json/.test(res.type)).toBe(true);
     // returns error if user is not authorized
-    expect(res.body.error).toEqual("No community with id 12345 found");
+    expect(res.body.error).toEqual("No community with id 123456789a123456789b1234 found");
+  });
+
+  test("Looking for a community with a string that doesn't match an id doesn't return anything", async () => {
+    const res = await request(app).get(`/communities/12345`);
+
+    // Return not found status code
+    expect(res.status).toEqual(404);
   });
 });
 
@@ -438,6 +447,7 @@ describe("POST/create communities", () => {
 describe("PUT/update communities", () => {
   // Add community to mock database
   beforeAll(async () => {
+    // Log in as a regular user and as an administrator
     const hashedPassword = await bcrypt.hash("hashedPassword", 10);
     const regularUser = new User({
       username: "mocka",
@@ -447,6 +457,15 @@ describe("PUT/update communities", () => {
     });
 
     const user = await regularUser.save();
+
+    const adminUser = new User({
+      username: "mockas",
+      email: "mockas@mockas.com",
+      password: hashedPassword,
+      permission: "admin",
+    });
+
+    const adminUserData = await adminUser.save();
 
     const logIn = await request(app)
       .post("/users/log-in")
@@ -459,6 +478,21 @@ describe("PUT/update communities", () => {
 
     token = logIn.body.token;
     userId = logIn.body.user._id.toString();
+
+    const logIn2 = await request(app)
+    .post("/users/log-in")
+    .set("Content-Type", "application/json")
+    .set("Accept", "application/json")
+    .send({
+      username: "mockas",
+      password: "hashedPassword",
+    });
+
+  token = logIn.body.token;
+  userId = logIn.body.user._id.toString();
+
+  adminToken = logIn2.body.token;
+  adminUserId = logIn2.body.user._id.toString();
 
     mockCommunity = new Community({
       name: "mockCommunity",
@@ -507,6 +541,7 @@ describe("PUT/update communities", () => {
     // remove communities and user from database
     afterAll(async () => {
       await User.findByIdAndDelete(userId);
+      await User.findByIdAndDelete(adminUserId);
       await Community.findByIdAndDelete(mockCommunityId);
       await Community.findByIdAndDelete(mockCommunity2Id);
     });
@@ -817,6 +852,47 @@ describe("PUT/update communities", () => {
     // Return the correct community info
     expect(res.body.community.icon).toBe(updatedCommunity.icon);
   });
+
+  test("Updating a non existing community returns an error", async () => {;
+    const updatedCommunity = {
+      name: "updatedMock",
+      subtitle: "updated fake community",
+      description:
+        "This is a updated fake community created for testing purposes",
+    };
+
+    const res = await request(app)
+      .put('/communities/123456789a123456789b1234')
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send(updatedCommunity);
+    
+
+    expect(res.status).toEqual(404);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // returns error if user is not authorized
+    expect(res.body.error).toEqual("No community with id 123456789a123456789b1234 found");
+  });
+
+  test("Updating a  with a string that doesn't match an id doesn't return anything", async () => {
+    const updatedCommunity = {
+      name: "updatedMock",
+      subtitle: "updated fake community",
+      description:
+        "This is a updated fake community created for testing purposes",
+    };
+
+    const res = await request(app)
+      .put('/communities/12345')
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send(updatedCommunity);
+    
+
+    expect(res.status).toEqual(404);
+  });
 });
 
 
@@ -835,6 +911,15 @@ describe("DELETE communities", () => {
 
     const user = await regularUser.save();
 
+    const adminUser = new User({
+      username: "mockas",
+      email: "mockas@mockas.com",
+      password: hashedPassword,
+      permission: "admin",
+    });
+
+    const adminUserData = await adminUser.save();
+
     const logIn = await request(app)
       .post("/users/log-in")
       .set("Content-Type", "application/json")
@@ -847,6 +932,22 @@ describe("DELETE communities", () => {
     token = logIn.body.token;
     userId = logIn.body.user._id.toString();
 
+    const logIn2 = await request(app)
+    .post("/users/log-in")
+    .set("Content-Type", "application/json")
+    .set("Accept", "application/json")
+    .send({
+      username: "mockas",
+      password: "hashedPassword",
+    });
+
+  token = logIn.body.token;
+  userId = logIn.body.user._id.toString();
+
+  adminToken = logIn2.body.token;
+  adminUserId = logIn2.body.user._id.toString();
+
+  // create mock communities
     mockCommunity = new Community({
       name: "mockCommunity",
       subtitle: "Fake community",
@@ -939,5 +1040,44 @@ describe("DELETE communities", () => {
     // Look for community, it shouldn't be there
     const community = await Community.findById(mockCommunityId);
     expect(community).toBe(null);
+  });
+
+  test("Deleting a non existing community returns an error", async () => {;
+    const updatedCommunity = {
+      name: "updatedMock",
+      subtitle: "updated fake community",
+      description:
+        "This is a updated fake community created for testing purposes",
+    };
+
+    const res = await request(app)
+      .delete('/communities/123456789a123456789b1234')
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .set("Authorization", `Bearer ${adminToken}`)
+    
+
+    expect(res.status).toEqual(404);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // returns error if user is not authorized
+    expect(res.body.error).toEqual("No community with id 123456789a123456789b1234 found");
+  });
+
+  test("Deleting a community with a string that doesn't match and id doesn't return anything", async () => {;
+    const updatedCommunity = {
+      name: "updatedMock",
+      subtitle: "updated fake community",
+      description:
+        "This is a updated fake community created for testing purposes",
+    };
+
+    const res = await request(app)
+      .delete('/communities/12345')
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .set("Authorization", `Bearer ${adminToken}`)
+    
+
+    expect(res.status).toEqual(404);
   });
 });

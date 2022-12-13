@@ -8,7 +8,7 @@ require("../passport");
 // GET a single user
 // only if user is authorized
 router.get(
-  "/:id",
+  "/:id([a-zA-Z0-9]{24})",
   (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate(
       "jwt",
@@ -44,7 +44,7 @@ router.post("/sign-up", usersController.user_sign_up);
 
 // PUT/update a single user
 router.put(
-  "/:id",
+  "/:id([a-zA-Z0-9]{24})",
   (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate(
       "jwt",
@@ -74,7 +74,7 @@ router.put(
 
 // DELETE a single user
 router.delete(
-  "/:id",
+  "/:id([a-zA-Z0-9]{24})",
   (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate(
       "jwt",

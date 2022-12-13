@@ -10,7 +10,7 @@ const router = express_1.default.Router();
 require("../passport");
 // GET a single user
 // only if user is authorized
-router.get("/:id", (req, res, next) => {
+router.get("/:id([a-zA-Z0-9]{24})", (req, res, next) => {
     passport_1.default.authenticate("jwt", { session: false }, (err, user) => {
         if (err) {
             return next(err);
@@ -36,7 +36,7 @@ router.post("/log-in", usersController.user_log_in);
 // Sign user up
 router.post("/sign-up", usersController.user_sign_up);
 // PUT/update a single user
-router.put("/:id", (req, res, next) => {
+router.put("/:id([a-zA-Z0-9]{24})", (req, res, next) => {
     passport_1.default.authenticate("jwt", { session: false }, (err, user) => {
         if (err) {
             return next(err);
@@ -58,7 +58,7 @@ router.put("/:id", (req, res, next) => {
     })(req, res, next);
 }, usersController.user_update);
 // DELETE a single user
-router.delete("/:id", (req, res, next) => {
+router.delete("/:id([a-zA-Z0-9]{24})", (req, res, next) => {
     passport_1.default.authenticate("jwt", { session: false }, (err, user) => {
         if (err) {
             return next(err);
