@@ -52,7 +52,7 @@ exports.post_create = [
         .isLength({ min: 1 })
         .escape()
         .withMessage("Post text can't be empty"),
-    (0, express_validator_1.body)("community", "A community is required")
+    (0, express_validator_1.body)("community")
         .trim()
         .escape()
         .custom((value) => __awaiter(void 0, void 0, void 0, function* () {
@@ -92,9 +92,70 @@ exports.post_create = [
 ];
 // Update an individual post
 // PUT post
-exports.post_update = (req, res) => {
-    res.send({ post: `Post ${req.params.id} updated` });
-};
+exports.post_update = [
+    (0, express_validator_1.body)("title", "Post title is required")
+        .trim()
+        .isLength({ min: 3, max: 300 })
+        .escape()
+        .withMessage("Post title must be between 3 and 300 characters long"),
+    (0, express_validator_1.body)("text", "Post text is required")
+        .trim()
+        .isLength({ min: 1 })
+        .escape()
+        .withMessage("Post text can't be empty"),
+    (0, express_validator_1.body)("community", "A community is required")
+        .optional()
+        .trim()
+        .escape()
+        .custom((value) => __awaiter(void 0, void 0, void 0, function* () {
+        // Look for community in database
+        const existingCommunity = yield communityModel_1.default.findById(value);
+        // If it doesn't exist, show error
+        if (existingCommunity === null) {
+            return Promise.reject();
+        }
+    }))
+        .withMessage("Community doesn't exist"),
+    (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+        const errors = (0, express_validator_1.validationResult)(req);
+        // if validation didn't succeed
+        if (!errors.isEmpty()) {
+            // Return errors
+            return res.status(400).send({ errors: errors.array() });
+        }
+        try {
+            let previousPost;
+            // Get upvotes and comments from previous entry
+            previousPost = (yield postModel_1.default.findById(req.params.id));
+            if (previousPost === null) {
+                // If no community is found, send error;
+                return res.status(404).send({ error: `No post with id ${req.params.id} found` });
+            }
+            // Create a new post
+            const newPost = new postModel_1.default({
+                title: req.body.title,
+                text: req.body.text,
+                community: previousPost.community,
+                user: req.body.userId,
+                upVotes: previousPost.upVotes,
+                comments: previousPost.comments,
+                _id: req.params.id,
+            });
+            // option to return updated post
+            const updateOptions = {
+                new: true,
+                upsert: true,
+                rawResult: true,
+            };
+            // Update post in database
+            const updatedPost = yield postModel_1.default.findByIdAndUpdate(req.params.id, newPost, updateOptions);
+            return res.send({ post: updatedPost.value });
+        }
+        catch (err) {
+            return next(err);
+        }
+    }),
+];
 // Display details about an individual post
 // DELETE post
 exports.post_delete = (req, res) => {
