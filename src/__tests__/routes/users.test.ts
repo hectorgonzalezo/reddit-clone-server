@@ -1,9 +1,9 @@
 const request = require("supertest");
 const express = require("express");
-const users = require('../../routes/users');
-import bcrypt from 'bcryptjs';
-const initializeMongoServer = require('../../mongoConfigTesting');
-import User from '../../models/userModel';
+const users = require("../../routes/users");
+import bcrypt from "bcryptjs";
+const initializeMongoServer = require("../../mongoConfigTesting");
+import User from "../../models/userModel";
 
 const app = express();
 
@@ -16,21 +16,20 @@ app.use("/", users);
 let adminUserId: string;
 let regularUserId: string;
 
-
 // Add user to mock database
 beforeAll(async () => {
-  const hashedPassword = await bcrypt.hash('hashedPassword', 10);
+  const hashedPassword = await bcrypt.hash("hashedPassword", 10);
 
   const adminUser = new User({
-    username: 'mock',
-    email: 'mock@mock.com',
+    username: "mock",
+    email: "mock@mock.com",
     password: hashedPassword,
     permission: "admin",
   });
 
   const regularUser = new User({
-    username: 'mocka',
-    email: 'mocka@mocka.com',
+    username: "mocka",
+    email: "mocka@mocka.com",
     password: hashedPassword,
     permission: "regular",
   });
@@ -39,10 +38,9 @@ beforeAll(async () => {
   regularUserId = users[1]._id.toString();
 });
 
-
 describe("User GET", () => {
   test("Get info about a user impossible without authorization", async () => {
-    const res = await request(app).get('/123456789a123456789b1234');
+    const res = await request(app).get("/123456789a123456789b1234");
 
     // Return unauthorized status code
     expect(res.status).toEqual(403);
@@ -54,7 +52,7 @@ describe("User GET", () => {
   });
 
   test("Wrong format of id returns nothing", async () => {
-    const res = await request(app).get('/12345');
+    const res = await request(app).get("/12345");
 
     // Return not found status code
     expect(res.status).toEqual(404);
@@ -65,12 +63,12 @@ describe("User GET", () => {
     const logIn = await request(app)
       .post("/log-in")
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .send({
         username: "mock",
         password: "hashedPassword",
       });
-    
+
     const { token } = logIn.body;
     const userId = logIn.body.user._id;
 
@@ -81,21 +79,17 @@ describe("User GET", () => {
 
     expect(res.status).toEqual(200);
     expect(/.+\/json/.test(res.type)).toBe(true);
-    expect(res.body.user._id).toBe(userId)
-    expect(res.body.user.username).toBe("mock")
+    expect(res.body.user._id).toBe(userId);
+    expect(res.body.user.username).toBe("mock");
   });
-
-
-
 });
 
 describe("User update", () => {
-  
   test("Update a user not allowed without admin permission", async () => {
     const res = await request(app)
       .put(`/${regularUserId}`)
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .send({
         username: "updated",
         email: "updated@mock.com",
@@ -115,7 +109,7 @@ describe("User update", () => {
     const logIn = await request(app)
       .post("/log-in")
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .send({
         username: "mock",
         password: "hashedPassword",
@@ -127,7 +121,7 @@ describe("User update", () => {
       .put(`/${regularUserId}`)
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
-      .set("Accept", "application/json")
+
       .send({
         username: "updated",
         email: "updated@mock.com",
@@ -149,24 +143,24 @@ describe("User update", () => {
     expect(res.body).not.toHaveProperty("token");
   });
 
-   // invalid username
-   test("Update user with short username", async () => {
-        // log in and get token
-        const logIn = await request(app)
-        .post("/log-in")
-        .set("Content-Type", "application/json")
-        .set("Accept", "application/json")
-        .send({
-          username: "mock",
-          password: "hashedPassword",
-        });
-  
-      const { token } = logIn.body;
-  
+  // invalid username
+  test("Update user with short username", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
     const res = await request(app)
       .put(`/${regularUserId}`)
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .set("Authorization", `Bearer ${token}`)
       .send({
         username: "ju",
@@ -179,224 +173,228 @@ describe("User update", () => {
     expect(res.status).toEqual(400);
     // returns error if user is too short
     expect(res.body.errors).not.toBe(undefined);
-    expect(res.body.errors[0].msg).toEqual("Username must be between 3 and 25 characters long");
+    expect(res.body.errors[0].msg).toEqual(
+      "Username must be between 3 and 25 characters long"
+    );
   });
 
   test("Update user with already existing username", async () => {
-        // log in and get token
-        const logIn = await request(app)
-        .post("/log-in")
-        .set("Content-Type", "application/json")
-        .set("Accept", "application/json")
-        .send({
-          username: "mock",
-          password: "hashedPassword",
-        });
-  
-      const { token } = logIn.body;
-  
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
     const res = await request(app)
-    .put(`/${regularUserId}`)
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .set("Authorization", `Bearer ${token}`)
-    .send({
-      username: "mock",
-      email: "mock1@mock1.com",
-      password: "123456",
-      passwordConfirm: "123456",
-    });
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Username already exists");
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        username: "mock",
+        email: "mock1@mock1.com",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Username already exists");
   });
-
 
   // invalid email
   test("Update user with invalid email", async () => {
-        // log in and get token
-        const logIn = await request(app)
-        .post("/log-in")
-        .set("Content-Type", "application/json")
-        .set("Accept", "application/json")
-        .send({
-          username: "mock",
-          password: "hashedPassword",
-        });
-  
-      const { token } = logIn.body;
-  
-    const res = await request(app)
-    .put(`/${regularUserId}`)
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .set("Authorization", `Bearer ${token}`)
-    .send({
-      username: "juan",
-      email: "mockmock",
-      password: "123456",
-      passwordConfirm: "123456",
-    });
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Invalid email");
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
+
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        username: "juan",
+        email: "mockmock",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Invalid email");
   });
 
   test("Update user with already existing email", async () => {
-        // log in and get token
-        const logIn = await request(app)
-        .post("/log-in")
-        .set("Content-Type", "application/json")
-        .set("Accept", "application/json")
-        .send({
-          username: "mock",
-          password: "hashedPassword",
-        });
-  
-      const { token } = logIn.body;
-  
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
     const res = await request(app)
-    .put(`/${regularUserId}`)
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .set("Authorization", `Bearer ${token}`)
-    .send({
-      username: "mock1",
-      email: "mock@mock.com",
-      password: "123456",
-      passwordConfirm: "123456",
-    });
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Email already exists");
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        username: "mock1",
+        email: "mock@mock.com",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Email already exists");
   });
-
 
   // invalid password
   test("Update user with short password", async () => {
-        // log in and get token
-        const logIn = await request(app)
-        .post("/log-in")
-        .set("Content-Type", "application/json")
-        .set("Accept", "application/json")
-        .send({
-          username: "mock",
-          password: "hashedPassword",
-        });
-  
-      const { token } = logIn.body;
-  
-    const res = await request(app)
-    .put(`/${regularUserId}`)
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .set("Authorization", `Bearer ${token}`)
-    .send({
-      username: "juanpa",
-      email: "mock@mock.com",
-      password: "1234",
-      passwordConfirm: "1234",
-    });
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Password must be at least 6 characters long");
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
+
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        username: "juanpa",
+        email: "mock@mock.com",
+        password: "1234",
+        passwordConfirm: "1234",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual(
+      "Password must be at least 6 characters long"
+    );
   });
 
   test("Update user with short password confirm", async () => {
-        // log in and get token
-        const logIn = await request(app)
-        .post("/log-in")
-        .set("Content-Type", "application/json")
-        .set("Accept", "application/json")
-        .send({
-          username: "mock",
-          password: "hashedPassword",
-        });
-  
-      const { token } = logIn.body;
-  
-    const res = await request(app)
-    .put(`/${regularUserId}`)
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .set("Authorization", `Bearer ${token}`)
-    .send({
-      username: "juanpa",
-      email: "mock@mock.com",
-      password: "123456",
-      passwordConfirm: "1234",
-    });
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Password must be at least 6 characters long");
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
+
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        username: "juanpa",
+        email: "mock@mock.com",
+        password: "123456",
+        passwordConfirm: "1234",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual(
+      "Password must be at least 6 characters long"
+    );
   });
 
   // Different passwords
   test("Update user with non matching passwords", async () => {
-        // log in and get token
-        const logIn = await request(app)
-        .post("/log-in")
-        .set("Content-Type", "application/json")
-        .set("Accept", "application/json")
-        .send({
-          username: "mock",
-          password: "hashedPassword",
-        });
-  
-      const { token } = logIn.body;
-  
-    const res = await request(app)
-    .put(`/${regularUserId}`)
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .set("Authorization", `Bearer ${token}`)
-    .send({
-      username: "juanpa",
-      email: "mock@mock.com",
-      password: "123456",
-      passwordConfirm: "1234567",
-    });
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Passwords don't match");
-  });
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
 
-  // Send multiple errors 
-  test("Update user with non matching passwords", async () => {
-        // log in and get token
-        const logIn = await request(app)
-        .post("/log-in")
-        .set("Content-Type", "application/json")
-        .set("Accept", "application/json")
-        .send({
-          username: "mock",
-          password: "hashedPassword",
-        });
-  
-      const { token } = logIn.body;
-  
+    const { token } = logIn.body;
+
     const res = await request(app)
       .put(`/${regularUserId}`)
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        username: "juanpa",
+        email: "mock@mock.com",
+        password: "123456",
+        passwordConfirm: "1234567",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Passwords don't match");
+  });
+
+  // Send multiple errors
+  test("Update user with non matching passwords", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
+
       .set("Authorization", `Bearer ${token}`)
       .send({
         username: "ju",
@@ -411,9 +409,7 @@ describe("User update", () => {
     expect(res.body.errors).not.toBe(undefined);
     expect(res.body.errors.length).toBe(5);
   });
-
-
-})
+});
 describe("User DELETE", () => {
   test("Delete a user not allow without admin permission", async () => {
     const res = await request(app).delete(`/${regularUserId}`);
@@ -430,7 +426,7 @@ describe("User DELETE", () => {
     const logIn = await request(app)
       .post("/log-in")
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .send({
         username: "mock",
         password: "hashedPassword",
@@ -443,34 +439,33 @@ describe("User DELETE", () => {
       .delete(`/${regularUserId}`)
       .set("Authorization", `Bearer ${token}`);
 
-      expect(res.status).toEqual(200);
-      expect(/.+\/json/.test(res.type)).toBe(true);
-      expect(res.body).toEqual({
-        response: `deleted user ${regularUserId}`
-      });
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    expect(res.body).toEqual({
+      response: `deleted user ${regularUserId}`,
+    });
   });
-
-})
+});
 
 describe("User log in", () => {
-
   // Username is too short
   test("Short username", async () => {
     const res = await request(app)
       .post("/log-in")
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .send({
         username: "mo",
         password: "123456",
-      });;
+      });
 
     // return Bad request error code
     expect(res.status).toEqual(400);
     // returns error if user is too short
     expect(res.body.errors).not.toBe(undefined);
-    expect(res.body.errors[0].msg).toEqual("Username must be between 3 and 25 characters long");
-
+    expect(res.body.errors[0].msg).toEqual(
+      "Username must be between 3 and 25 characters long"
+    );
   });
 
   // If trying to log in using an invalid username
@@ -478,18 +473,17 @@ describe("User log in", () => {
     const res = await request(app)
       .post("/log-in")
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .send({
         username: "mockas",
         password: "hashedPassword",
-      });;
+      });
 
     // return Bad request error code
     expect(res.status).toEqual(400);
     // returns error if user is too short
     expect(res.body.errors).not.toBe(undefined);
     expect(res.body.errors[0].msg).toEqual("Incorrect username or password");
-
   });
 
   // password is too short
@@ -497,18 +491,19 @@ describe("User log in", () => {
     const res = await request(app)
       .post("/log-in")
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .send({
         username: "mock",
         password: "12",
-      });;
+      });
 
     // return Bad request error code
     expect(res.status).toEqual(400);
     // returns error if user is too short
     expect(res.body.errors).not.toBe(undefined);
-    expect(res.body.errors[0].msg).toEqual("Password must be at least 6 characters long");
-
+    expect(res.body.errors[0].msg).toEqual(
+      "Password must be at least 6 characters long"
+    );
   });
 
   // If trying to log in using an invalid password
@@ -516,7 +511,7 @@ describe("User log in", () => {
     const res = await request(app)
       .post("/log-in")
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .send({
         username: "mock",
         password: "hashedPasswordWrong",
@@ -527,14 +522,13 @@ describe("User log in", () => {
     // returns error if user is too short
     expect(res.body.errors).not.toBe(undefined);
     expect(res.body.errors[0].msg).toEqual("Incorrect username or password");
-
   });
 
   test("Login successfully when writing right credentials", async () => {
     const res = await request(app)
       .post("/log-in")
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .send({
         username: "mock",
         password: "hashedPassword",
@@ -549,16 +543,15 @@ describe("User log in", () => {
 
     expect(res.body).toHaveProperty("token");
   });
-})
+});
 
-describe("User sign up", () => {  
-
+describe("User sign up", () => {
   // invalid username
   test("Sign up user with short username", async () => {
     const res = await request(app)
       .post("/sign-up")
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .send({
         username: "ju",
         email: "mock@mock.com",
@@ -570,134 +563,138 @@ describe("User sign up", () => {
     expect(res.status).toEqual(400);
     // returns error if user is too short
     expect(res.body.errors).not.toBe(undefined);
-    expect(res.body.errors[0].msg).toEqual("Username must be between 3 and 25 characters long");
+    expect(res.body.errors[0].msg).toEqual(
+      "Username must be between 3 and 25 characters long"
+    );
   });
 
   test("Sign up user with already existing username", async () => {
     const res = await request(app)
-    .post("/sign-up")
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .send({
-      username: "mock",
-      email: "mock1@mock1.com",
-      password: "123456",
-      passwordConfirm: "123456",
-    });
+      .post("/sign-up")
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Username already exists");
+      .send({
+        username: "mock",
+        email: "mock1@mock1.com",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Username already exists");
   });
-
 
   // invalid email
   test("Sign up user with invalid email", async () => {
     const res = await request(app)
-    .post("/sign-up")
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .send({
-      username: "juan",
-      email: "mockmock",
-      password: "123456",
-      passwordConfirm: "123456",
-    });
+      .post("/sign-up")
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Invalid email");
+      .send({
+        username: "juan",
+        email: "mockmock",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Invalid email");
   });
 
   test("Sign up user with already existing email", async () => {
     const res = await request(app)
-    .post("/sign-up")
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .send({
-      username: "mock1",
-      email: "mock@mock.com",
-      password: "123456",
-      passwordConfirm: "123456",
-    });
+      .post("/sign-up")
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Email already exists");
+      .send({
+        username: "mock1",
+        email: "mock@mock.com",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Email already exists");
   });
-
 
   // invalid password
   test("Sign up user with short password", async () => {
     const res = await request(app)
-    .post("/sign-up")
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .send({
-      username: "juanpa",
-      email: "mock@mock.com",
-      password: "1234",
-      passwordConfirm: "1234",
-    });
+      .post("/sign-up")
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Password must be at least 6 characters long");
+      .send({
+        username: "juanpa",
+        email: "mock@mock.com",
+        password: "1234",
+        passwordConfirm: "1234",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual(
+      "Password must be at least 6 characters long"
+    );
   });
 
   test("Sign up user with short password confirm", async () => {
     const res = await request(app)
-    .post("/sign-up")
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .send({
-      username: "juanpa",
-      email: "mock@mock.com",
-      password: "123456",
-      passwordConfirm: "1234",
-    });
+      .post("/sign-up")
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Password must be at least 6 characters long");
+      .send({
+        username: "juanpa",
+        email: "mock@mock.com",
+        password: "123456",
+        passwordConfirm: "1234",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual(
+      "Password must be at least 6 characters long"
+    );
   });
 
   // Different passwords
   test("Sign up user with non matching passwords", async () => {
     const res = await request(app)
-    .post("/sign-up")
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .send({
-      username: "juanpa",
-      email: "mock@mock.com",
-      password: "123456",
-      passwordConfirm: "1234567",
-    });
+      .post("/sign-up")
+      .set("Content-Type", "application/json")
 
-  // return Bad request error code
-  expect(res.status).toEqual(400);
-  // returns error if user is too short
-  expect(res.body.errors).not.toBe(undefined);
-  expect(res.body.errors[0].msg).toEqual("Passwords don't match");
+      .send({
+        username: "juanpa",
+        email: "mock@mock.com",
+        password: "123456",
+        passwordConfirm: "1234567",
+      });
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    // returns error if user is too short
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Passwords don't match");
   });
 
-  // Send multiple errors 
+  // Send multiple errors
   test("Sign up user with non matching passwords", async () => {
     const res = await request(app)
       .post("/sign-up")
       .set("Content-Type", "application/json")
-      .set("Accept", "application/json")
+
       .send({
         username: "ju",
         email: "mock",
@@ -715,27 +712,26 @@ describe("User sign up", () => {
   // Correct sign up!
   test("Correctly sign up", async () => {
     const res = await request(app)
-    .post("/sign-up")
-    .set("Content-Type", "application/json")
-    .set("Accept", "application/json")
-    .send({
-      username: "juan",
-      email: "juan@juan.com",
-      password: "123456",
-      passwordConfirm: "123456",
-    });
+      .post("/sign-up")
+      .set("Content-Type", "application/json")
 
-  // return ok status code
-  expect(res.status).toEqual(200);
+      .send({
+        username: "juan",
+        email: "juan@juan.com",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
 
-  // return user and token
-  expect(res.body).toHaveProperty('user');
-  expect(res.body.user.username).toBe('juan');
-  expect(res.body.user.email).toBe('juan@juan.com');
-  expect(res.body.user.permission).toBe('regular');
-  expect(res.body.user.communities).toEqual([]);
+    // return ok status code
+    expect(res.status).toEqual(200);
 
-  expect(res.body).toHaveProperty('token');
+    // return user and token
+    expect(res.body).toHaveProperty("user");
+    expect(res.body.user.username).toBe("juan");
+    expect(res.body.user.email).toBe("juan@juan.com");
+    expect(res.body.user.permission).toBe("regular");
+    expect(res.body.user.communities).toEqual([]);
+
+    expect(res.body).toHaveProperty("token");
   });
-
-})
+});
