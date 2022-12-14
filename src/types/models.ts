@@ -14,7 +14,7 @@ export interface IPost extends Document {
   title: string;
   text: string;
   user: ObjectId;
-  community: ObjectId;
+  community: ObjectId | ICommunity;
   upVotes: number;
   comments: [] | ObjectId[] | IComment[];
 }
@@ -23,6 +23,7 @@ export interface IComment extends Document {
   text: string;
   user: ObjectId | IUser;
   upVotes: number;
+  responses: [] | ObjectId[] | IComment[];
 }
 
 export interface ICommunity extends Document {

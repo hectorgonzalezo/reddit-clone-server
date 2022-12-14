@@ -18,9 +18,13 @@ const postModel_1 = __importDefault(require("../models/postModel"));
 exports.comments_list = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Look for post and extract comments
-        const { comments } = yield postModel_1.default.findById(req.postId, {
+        const { comments } = (yield postModel_1.default.findById(req.postId, {
             comments: 1,
-        }).populate("comments");
+        }).populate({
+            path: "comments",
+            populate: { path: "responses", model: "Comment" },
+        }));
+        // console.log(comments)
         return res.status(200).send({ comments });
     }
     catch (error) {

@@ -8,9 +8,13 @@ import { IPost } from 'src/types/models';
 exports.comments_list = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   try {
     // Look for post and extract comments
-    const { comments } = await Post.findById(req.postId, {
+    const { comments } = (await Post.findById(req.postId, {
       comments: 1,
-    }).populate("comments") as IPost;
+    }).populate({
+      path: "comments",
+      populate: { path: "responses", model: "Comment" },
+    })) as IPost;
+    // console.log(comments)
     return res.status(200).send({ comments });
   } catch (error) {
     return next(error);
