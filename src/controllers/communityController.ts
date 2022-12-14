@@ -41,7 +41,15 @@ exports.community_create = [
     })
     .withMessage(
       "Only letters, numbers and underscore allowed in community name"
-    ),
+    ).custom(async (value) => {
+      // Look for community in database
+      const existingCommunity = await Community.find({ name: value});
+      // If it exists, show error
+      if (existingCommunity.length !== 0) {
+        return Promise.reject();
+      }
+    })
+    .withMessage("Community name already exists"),
   body("subtitle", "Community subtitle is required")
     .trim()
     .isLength({ min: 3, max: 100 })
@@ -65,16 +73,6 @@ exports.community_create = [
       return res.status(400).send({ errors: errors.array() });
     }
     try {
-      // look in db for a community with the same name
-      const existingCommunity = await Community.find({ name: req.body.name });
-
-      // if one exists, send error
-      if (existingCommunity.length !== 0) {
-        // return error and data filled so far
-        return res.status(400).send({
-          errors: [{ msg: "Community name already exists", community: req.body }],
-        });
-      }
 
       // If no community with that name exists, create one
       const communityObj: ICommunity = {
@@ -115,7 +113,15 @@ exports.community_update = [
     })
     .withMessage(
       "Only letters, numbers and underscore allowed in community name"
-    ),
+    ).custom(async (value) => {
+      // Look for community in database
+      const existingCommunity = await Community.find({ name: value});
+      // If it exists, show error
+      if (existingCommunity.length !== 0) {
+        return Promise.reject();
+      }
+    })
+    .withMessage("Community name already exists"),
   body("subtitle", "Community subtitle is required")
     .trim()
     .isLength({ min: 3, max: 100 })
@@ -131,6 +137,7 @@ exports.community_update = [
     .trim()
     .isURL()
     .withMessage("Icon has to be a URl"),
+   
   async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     // if validation didn't succeed
@@ -139,21 +146,6 @@ exports.community_update = [
       return res.status(400).send({ errors: errors.array() });
     }
     try {
-      // look in db for a community with the same name
-      const existingCommunity = await Community.find({ name: req.body.name });
-      // if one exists, send error
-      if (
-        existingCommunity.length !== 0 &&
-        existingCommunity[0]._id.toString() !== req.params.id
-      ) {
-        // return error and data filled so far
-        return res.status(400).send({
-          errors: [
-            { msg: "Community name already exists", community: req.body },
-          ],
-        });
-      }
-
 
       let previousCommunity: ICommunity;
       // Get posts and users from previous entry
@@ -163,9 +155,6 @@ exports.community_update = [
         // If no community is found, send error;
         return res.status(404).send({ error: `No community with id ${req.params.id} found` });
       }
-
-
-
       
       // If no community with that name exists, create one
       const communityObj: ICommunity = {

@@ -49,7 +49,15 @@ exports.community_create = [
         .custom((value) => {
         return /^[a-zA-Z0-9_]+$/.test(value);
     })
-        .withMessage("Only letters, numbers and underscore allowed in community name"),
+        .withMessage("Only letters, numbers and underscore allowed in community name").custom((value) => __awaiter(void 0, void 0, void 0, function* () {
+        // Look for community in database
+        const existingCommunity = yield communityModel_1.default.find({ name: value });
+        // If it exists, show error
+        if (existingCommunity.length !== 0) {
+            return Promise.reject();
+        }
+    }))
+        .withMessage("Community name already exists"),
     (0, express_validator_1.body)("subtitle", "Community subtitle is required")
         .trim()
         .isLength({ min: 3, max: 100 })
@@ -73,15 +81,6 @@ exports.community_create = [
             return res.status(400).send({ errors: errors.array() });
         }
         try {
-            // look in db for a community with the same name
-            const existingCommunity = yield communityModel_1.default.find({ name: req.body.name });
-            // if one exists, send error
-            if (existingCommunity.length !== 0) {
-                // return error and data filled so far
-                return res.status(400).send({
-                    errors: [{ msg: "Community name already exists", community: req.body }],
-                });
-            }
             // If no community with that name exists, create one
             const communityObj = {
                 name: req.body.name,
@@ -116,7 +115,15 @@ exports.community_update = [
         .custom((value) => {
         return /^[a-zA-Z0-9_]+$/.test(value);
     })
-        .withMessage("Only letters, numbers and underscore allowed in community name"),
+        .withMessage("Only letters, numbers and underscore allowed in community name").custom((value) => __awaiter(void 0, void 0, void 0, function* () {
+        // Look for community in database
+        const existingCommunity = yield communityModel_1.default.find({ name: value });
+        // If it exists, show error
+        if (existingCommunity.length !== 0) {
+            return Promise.reject();
+        }
+    }))
+        .withMessage("Community name already exists"),
     (0, express_validator_1.body)("subtitle", "Community subtitle is required")
         .trim()
         .isLength({ min: 3, max: 100 })
@@ -140,18 +147,6 @@ exports.community_update = [
             return res.status(400).send({ errors: errors.array() });
         }
         try {
-            // look in db for a community with the same name
-            const existingCommunity = yield communityModel_1.default.find({ name: req.body.name });
-            // if one exists, send error
-            if (existingCommunity.length !== 0 &&
-                existingCommunity[0]._id.toString() !== req.params.id) {
-                // return error and data filled so far
-                return res.status(400).send({
-                    errors: [
-                        { msg: "Community name already exists", community: req.body },
-                    ],
-                });
-            }
             let previousCommunity;
             // Get posts and users from previous entry
             previousCommunity = (yield communityModel_1.default.findById(req.params.id));
