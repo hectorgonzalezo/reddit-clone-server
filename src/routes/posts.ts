@@ -68,6 +68,32 @@ router.put(
 );
 
 // DELETE a single post
-router.delete("/:id([a-zA-Z0-9]{24})", postsController.post_delete);
+router.delete(
+  "/:id([a-zA-Z0-9]{24})",
+  (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate(
+      "jwt",
+      { session: false },
+      async (err: any, user: IUser) => {
+        const post = await Post.findById(req.params.id);
+        const isUserCreator = post?.user.toString() === user._id?.toString();
+        const isUserAdmin = user.permission === "admin";
+        if (err || !user || (!isUserCreator && !isUserAdmin)) {
+          // if user is not admin, return error
+          return res.status(403).send({
+            errors: [
+              {
+                msg: "Only the post creator can delete the post",
+              },
+            ],
+          });
+        }
+        req.body.userId = user._id?.toString();
+        return next();
+      }
+    )(req, res, next);
+  },
+  postsController.post_delete
+);
 
 module.exports = router;

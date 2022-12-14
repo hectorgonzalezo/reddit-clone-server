@@ -156,9 +156,18 @@ exports.post_update = [
         }
     }),
 ];
-// Display details about an individual post
 // DELETE post
-exports.post_delete = (req, res) => {
-    res.send({ post: `Post ${req.params.id} deleted` });
-};
+exports.post_delete = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const post = yield postModel_1.default.findByIdAndDelete(req.params.id);
+        // if post doesn't exist, send error
+        if (post === null) {
+            return res.status(404).send({ error: `No post with id ${req.params.id} found` });
+        }
+        return res.send({ msg: `Post ${req.params.id} deleted` });
+    }
+    catch (err) {
+        return next(err);
+    }
+});
 //# sourceMappingURL=postController.js.map

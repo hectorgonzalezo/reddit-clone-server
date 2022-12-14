@@ -962,6 +962,23 @@ describe("DELETE communities", () => {
     mockCommunityWithPostsId = community3._id.toString();
   });
 
+  test("Allowed for logged in regular user which is the community creator", async () => {
+
+    const res = await request(app)
+      .delete(`/communities/${mockCommunityId}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    // return ok status and json
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return delete message
+    expect(res.body.msg).toBe(`Community ${mockCommunityId} deleted`);
+
+    // Look for community, it shouldn't be there
+    const community = await Community.findById(mockCommunityId);
+    expect(community).toBe(null);
+  });
+
   test("Not allowed if user isn't logged in", async () => {
     const res = await request(app).delete(`/communities/${mockCommunityId}`);
 
@@ -986,37 +1003,7 @@ describe("DELETE communities", () => {
     });
   });
 
-  test("Allowed for logged in regular user which is the community creator", async () => {
-    const updatedCommunity = {
-      name: "updatedMock",
-      subtitle: "updated fake community",
-      description:
-        "This is a updated fake community created for testing purposes",
-    };
-
-    const res = await request(app)
-      .delete(`/communities/${mockCommunityId}`)
-      .set("Authorization", `Bearer ${token}`);
-
-    // return ok status and json
-    expect(res.status).toEqual(200);
-    expect(/.+\/json/.test(res.type)).toBe(true);
-    // return delete message
-    expect(res.body.msg).toBe(`Community ${mockCommunityId} deleted`);
-
-    // Look for community, it shouldn't be there
-    const community = await Community.findById(mockCommunityId);
-    expect(community).toBe(null);
-  });
-
   test("Deleting a non existing community returns an error", async () => {
-    const updatedCommunity = {
-      name: "updatedMock",
-      subtitle: "updated fake community",
-      description:
-        "This is a updated fake community created for testing purposes",
-    };
-
     const res = await request(app)
       .delete("/communities/123456789a123456789b1234")
       .set("Content-Type", "application/json")
@@ -1031,12 +1018,6 @@ describe("DELETE communities", () => {
   });
 
   test("Deleting a community with a string that doesn't match and id doesn't return anything", async () => {
-    const updatedCommunity = {
-      name: "updatedMock",
-      subtitle: "updated fake community",
-      description:
-        "This is a updated fake community created for testing purposes",
-    };
 
     const res = await request(app)
       .delete("/communities/12345")

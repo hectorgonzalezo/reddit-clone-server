@@ -450,8 +450,10 @@ describe("PUT/update posts", () => {
   // remove communities, users and posts from database
   afterAll(async () => {
     await User.findByIdAndDelete(userId);
+    await User.findByIdAndDelete(adminUserId);
     await Community.findByIdAndDelete(mockCommunityId);
     await Post.findByIdAndDelete(mockPostId);
+    await Post.findByIdAndDelete(mockPost2Id);
   });
 
  
@@ -635,7 +637,6 @@ describe("PUT/update posts", () => {
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${adminToken}`)
       .send(updatedPost);
-      console.log(res.body);
 
     expect(res.status).toEqual(404);
     expect(/.+\/json/.test(res.type)).toBe(true);
@@ -661,3 +662,176 @@ describe("PUT/update posts", () => {
   });
   
 });
+
+
+
+
+//  Delete posts
+describe("DELETE posts", () => {
+  // Add communities, posts and user to mock database
+  beforeAll(async () => {
+    // Log user in
+    const hashedPassword = await bcrypt.hash("hashedPassword", 10);
+    const regularUser = new User({
+      username: "mocka",
+      email: "mocka@mocka.com",
+      password: hashedPassword,
+      permission: "regular",
+    });
+
+    const user = await regularUser.save();
+
+    const adminUser = new User({
+      username: "mockas",
+      email: "mockas@mockas.com",
+      password: hashedPassword,
+      permission: "admin",
+    });
+
+    const adminUserData = await adminUser.save();
+
+    const logIn = await request(app)
+      .post("/users/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    token = logIn.body.token;
+    userId = logIn.body.user._id.toString();
+
+    const logIn2 = await request(app)
+      .post("/users/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mockas",
+        password: "hashedPassword",
+      });
+
+    token = logIn.body.token;
+    userId = logIn.body.user._id.toString();
+
+    adminToken = logIn2.body.token;
+    adminUserId = logIn2.body.user._id.toString();
+
+    // Add fake community
+    mockCommunity = new Community({
+      name: "mockCommunity",
+      subtitle: "Fake community",
+      description: "This is a fake community created for testing purposes",
+      creator: userId,
+      users: [],
+      posts: [],
+    });
+
+    const community = await mockCommunity.save();
+    mockCommunityId = community._id.toString();
+
+    // Create comment
+    const mockComment = new Comment({
+      text: "Mock Comment",
+      user: userId,
+      upVotes: 0,
+    })
+
+    const comment = await mockComment.save();
+
+    // Create post with upvotes and comment
+    mockPost = new Post({
+      title: "Mock post",
+      text: "This is a mock post made for testing purposes",
+      user: userId,
+      community: mockCommunityId,
+      upVotes: 13,
+      comments: [comment._id],
+    });
+
+    mockPost2 = new Post({
+      title: "Mock post 2",
+      text: "This is a mock post made for testing purposes",
+      user: "123456789b123456789c1234",
+      community: mockCommunityId,
+    });
+
+    const [post1, post2] = await Promise.all([
+      mockPost.save(),
+      mockPost2.save(),
+    ]);
+    mockPostId = post1._id.toString();
+    mockPost2Id = post2._id.toString();
+  });
+
+  // remove communities, users and posts from database
+  afterAll(async () => {
+    await User.findByIdAndDelete(userId);
+    await Community.findByIdAndDelete(mockCommunityId);
+    await Post.findByIdAndDelete(mockPostId);
+  });
+
+
+  test("Allowed for logged in regular user which is the post creator", async () => {
+    const res = await request(app)
+      .delete(`/posts/${mockPostId}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    // return ok status and json
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return delete message
+    expect(res.body.msg).toBe(`Post ${mockPostId} deleted`);
+
+    // Look for post, it shouldn't be there
+    const post = await Post.findById(mockPostId);
+    expect(post).toBe(null);
+  });
+
+  test("Not allowed if user isn't logged in", async () => {
+    const res = await request(app).delete(`/posts/${mockPostId}`);
+
+    // return unauthorized status and json
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return both mock posts
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only the post creator can delete the post" }],
+    });
+  });
+
+  test("Not allowed if user isn't the post creator", async () => {
+    const res = await request(app).delete(`/posts/${mockPost2Id}`);
+
+    // return unauthorized status and json
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return both mock posts
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only the post creator can delete the post" }],
+    });
+  });
+
+  test("Deleting a non existing post returns an error", async () => {
+
+    const res = await request(app)
+      .delete("/posts/123456789a123456789b1234")
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(res.status).toEqual(404);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // returns error if user is not authorized
+    expect(res.body.error).toEqual(
+      "No post with id 123456789a123456789b1234 found"
+    );
+  });
+
+  test("Deleting a post with a string that doesn't match and id doesn't return anything", async () => {
+    const res = await request(app)
+      .delete("/posts/12345")
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(res.status).toEqual(404);
+  });
+  
+})
