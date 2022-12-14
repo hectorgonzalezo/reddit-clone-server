@@ -1,15 +1,34 @@
-const Comment = require('../models/commentModel');
-import { Request, Response } from 'express';
+import Comment from '../models/commentModel';
+import Post from '../models/postModel';
+import { Request, Response, NextFunction } from 'express';
+import { ExtendedRequest } from 'src/types/extendedRequest';
+import { IPost } from 'src/types/models';
 
 // List all comments in database
-exports.comments_list = (req: Request, res: Response) => {
-  res.send({ comments: "comments" });
+exports.comments_list = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
+  try {
+    // Look for post and extract comments
+    const { comments } = await Post.findById(req.postId, {
+      comments: 1,
+    }).populate("comments") as IPost;
+    return res.status(200).send({ comments });
+  } catch (error) {
+    return next(error);
+  }
 };
 
 // Display details about an individual comment
 // GET comment
-exports.comment_detail = (req: Request, res: Response) => {
-  res.send({ comment: `Comment ${req.params.id}` });
+exports.comment_detail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const comment = await Comment.findById(req.params.id); 
+    if (comment === null) {
+      return res.status(404).send({ error: `No comment with id ${req.params.id} found` });
+    }
+    return res.status(200).send({ comment });
+  } catch (error) {
+    return next(error);
+  }
 };
 
 // create an individual comment
