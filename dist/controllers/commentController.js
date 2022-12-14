@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const commentModel_1 = __importDefault(require("../models/commentModel"));
 const postModel_1 = __importDefault(require("../models/postModel"));
+const express_validator_1 = require("express-validator");
 // List all comments in database
 exports.comments_list = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -47,9 +48,62 @@ exports.comment_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, f
 });
 // create an individual comment
 // comment comment
-exports.comment_create = (req, res) => {
-    res.send({ comment: `Comment created` });
-};
+exports.comment_create = [
+    (0, express_validator_1.body)("text", "Comment text is required")
+        .trim()
+        .isLength({ min: 1 })
+        .escape()
+        .withMessage("Comment text can't be empty"),
+    (0, express_validator_1.body)("parent")
+        .optional()
+        .trim()
+        .escape()
+        .custom((value) => __awaiter(void 0, void 0, void 0, function* () {
+        // Look for community in database
+        const existingCommunity = yield commentModel_1.default.findById(value);
+        // If it doesn't exist, show error
+        if (existingCommunity === null) {
+            return Promise.reject();
+        }
+    }))
+        .withMessage("Parent comment doesn't exist"),
+    (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+        const errors = (0, express_validator_1.validationResult)(req);
+        // if validation didn't succeed
+        if (!errors.isEmpty()) {
+            // Return errors
+            return res.status(400).send({ errors: errors.array() });
+        }
+        try {
+            // Create a new comment
+            const newComment = new commentModel_1.default({
+                text: req.body.text,
+                user: req.body.userId,
+                upVotes: 0,
+                responses: [],
+            });
+            // Save it to database
+            const savedComment = yield newComment.save();
+            // If there's a parent, add comment to it, otherwise add to post
+            if (req.body.parent === undefined) {
+                // add comment to post
+                yield postModel_1.default.findByIdAndUpdate(req.postId, {
+                    $push: { comments: savedComment._id },
+                });
+            }
+            else {
+                // add comment to previous comment
+                yield commentModel_1.default.findByIdAndUpdate(req.body.parent, {
+                    $push: { responses: savedComment._id },
+                });
+            }
+            return res.send({ comment: savedComment });
+        }
+        catch (err) {
+            return next(err);
+        }
+    }),
+];
 // Update an individual comment
 // PUT comment
 exports.comment_update = (req, res) => {

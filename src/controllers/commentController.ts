@@ -1,5 +1,6 @@
 import Comment from '../models/commentModel';
 import Post from '../models/postModel';
+import { body, validationResult } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 import { ExtendedRequest } from 'src/types/extendedRequest';
 import { IPost } from 'src/types/models';
@@ -37,9 +38,63 @@ exports.comment_detail = async (req: Request, res: Response, next: NextFunction)
 
 // create an individual comment
 // comment comment
-exports.comment_create = (req: Request, res: Response) => {
-  res.send({ comment: `Comment created` });
-};
+exports.comment_create = [
+  body("text", "Comment text is required")
+    .trim()
+    .isLength({ min: 1 })
+    .escape()
+    .withMessage("Comment text can't be empty"),
+  body("parent")
+    .optional()
+    .trim()
+    .escape()
+    .custom(async (value) => {
+      // Look for community in database
+      const existingCommunity = await Comment.findById(value);
+      // If it doesn't exist, show error
+      if (existingCommunity === null) {
+        return Promise.reject();
+      }
+    })
+    .withMessage("Parent comment doesn't exist"),
+  async (req: ExtendedRequest, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    // if validation didn't succeed
+    if (!errors.isEmpty()) {
+      // Return errors
+      return res.status(400).send({ errors: errors.array() });
+    }
+    try {
+      // Create a new comment
+      const newComment = new Comment({
+        text: req.body.text,
+        user: req.body.userId,
+        upVotes: 0,
+        responses: [],
+      });
+
+      // Save it to database
+      const savedComment = await newComment.save();
+
+      // If there's a parent, add comment to it, otherwise add to post
+      if (req.body.parent === undefined) {
+        // add comment to post
+        await Post.findByIdAndUpdate(req.postId, {
+          $push: { comments: savedComment._id },
+        });
+      } else {
+        // add comment to previous comment
+        await Comment.findByIdAndUpdate(req.body.parent, {
+          $push: { responses: savedComment._id },
+        }); 
+      }
+
+      return res.send({ comment: savedComment });
+    } catch (err) {
+      return next(err);
+    }
+  },
+];
 
 // Update an individual comment
 // PUT comment

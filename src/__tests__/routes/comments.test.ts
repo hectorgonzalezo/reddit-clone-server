@@ -159,7 +159,6 @@ describe("GET comments", () => {
     // return ok status and json
     expect(res.status).toEqual(200);
     expect(/.+\/json/.test(res.type)).toBe(true);
-    console.log(res.body.comments[0].responses[0].responses);
     // return populated mock comment
     expect(res.body.comments[0].responses.length).toBe(1);
     expect(res.body.comments[0].responses[0].text).toBe(mockCommentResponse.text);
@@ -216,7 +215,7 @@ describe("GET comments", () => {
 });
 
 // create comments
-describe.skip("POST/create comments", () => {
+describe("POST/create comments", () => {
   // Add communities, user and comments to mock database
   beforeAll(async () => {
     const hashedPassword = await bcrypt.hash("hashedPassword", 10);
@@ -292,39 +291,36 @@ describe.skip("POST/create comments", () => {
   });
 
   test("Allowed for logged in regular user", async () => {
-    const newComment = {
-      text: "New fake comment",
-      user: userId,
-    };
 
     const res = await request(app)
       .post(`/posts/${mockPostId}/comments/`)
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
-      .send(newComment);
+      .send({
+        text: "New fake comment",
+      });
 
     expect(res.status).toEqual(200);
     expect(/.+\/json/.test(res.type)).toBe(true);
 
     // Return the correct  info
-    expect(res.body.post.text).toBe(newComment.text);
-    // assign current user to be the post creator
-    expect(res.body.post.user.toString()).toBe(userId);
+    expect(res.body.comment.text).toBe("New fake comment");
+    // assign current user to be the comment creator
+    expect(res.body.comment.user.toString()).toBe(userId);
     // upvotes is 0
-    expect(res.body.post.upVotes).toBe(0);
+    expect(res.body.comment.upVotes).toBe(0);
     // responses is an empty array
-    expect(res.body.post.responses).toEqual([]);
+    expect(res.body.comment.responses).toEqual([]);
   });
 
   test("Not allowed if user isn't logged in", async () => {
+
     const res = await request(app)
-      .post("/posts/")
+    .post(`/posts/${mockPostId}/comments/`)
       .set("Content-Type", "application/json")
       // don't send authorization
       .send({
-        title: "New mock post",
-        text: "New fake post is here",
-        community: mockCommunityId,
+        text: "New fake comment",
       });
 
     // return ok status and json
@@ -332,76 +328,109 @@ describe.skip("POST/create comments", () => {
     expect(/.+\/json/.test(res.type)).toBe(true);
     // return both mock posts
     expect(res.body).toEqual({
-      errors: [{ msg: "Only logged in users can create posts" }],
+      errors: [{ msg: "Only logged in users can add comments" }],
     });
   });
 
 
   test("Not allowed with no text", async () => {
-    const newPost = {
-      title: "newMock",
-      text: "",
-      community: mockCommunityId,
-    };
 
     const res = await request(app)
-      .post("/posts/")
+    .post(`/posts/${mockPostId}/comments/`)
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
-      .send(newPost);
+      .send({});
 
     // return Bad request error code
     expect(res.status).toEqual(400);
     expect(res.body.errors).not.toBe(undefined);
-    expect(res.body.errors[0].msg).toEqual("Post text can't be empty");
+    expect(res.body.errors[0].msg).toEqual("Comment text can't be empty");
   });
 
-  test("Not allowed without post", async () => {
-    const newPost = {
-      title: "newMock",
-      text: "New post",
-    };
-
+  test("Adding a comment without parent adds it to the post", async () => {
+    // Get previous number of comments
+    const postPreviously = await Post.findById(mockPostId) as IPost;
+    
     const res = await request(app)
-      .post("/posts/")
-      .set("Content-Type", "application/json")
-      .set("Authorization", `Bearer ${token}`)
-      .send(newPost);
+    .post(`/posts/${mockPostId}/comments/`)
+    .set("Content-Type", "application/json")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      text: "New fake comment",
+    });
 
-    // return Bad request error code
-    expect(res.status).toEqual(400);
-    expect(res.body.errors).not.toBe(undefined);
-    expect(res.body.errors[0].msg).toEqual("Community doesn't exist");
-  });
+    // get post after adding comments
+    const postAfter = await Post.findById(mockPostId) as IPost;
 
-  test("Not allowed if post doesn't exist", async () => {
-    const newPost = {
-      title: "newMock",
-      text: "New post",
-      community: "123456789a123456789b1234"
-    };
+  expect(res.status).toEqual(200);
+  expect(/.+\/json/.test(res.type)).toBe(true);
 
-    const res = await request(app)
-      .post("/posts/")
-      .set("Content-Type", "application/json")
-      .set("Authorization", `Bearer ${token}`)
-      .send(newPost);
-
-    // return Bad request error code
-    expect(res.status).toEqual(400);
-    expect(res.body.errors).not.toBe(undefined);
-    expect(res.body.errors[0].msg).toEqual("Community doesn't exist");
-  });
-
-  test("Adding a comment updates the post", async () => {
-  });
-
-  test("Upvotes are 0 by default", async () => {
-  });
-
-  test("Comments without parent are added to post", async () => {
+  expect(postAfter).not.toBe(null);
+  expect(postPreviously).not.toBe(null);
+  // check if a response was added
+  expect(postAfter.comments.length).toBe(postPreviously.comments.length + 1);
   });
 
   test("Comments can be added as responses by setting a parent", async () => {
+        // Get previous number of responses in comment
+        const commentPreviously = await Comment.findById(mockCommentId) as IComment;
+    
+        const res = await request(app)
+        .post(`/posts/${mockPostId}/comments/`)
+        .set("Content-Type", "application/json")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          text: "New fake comment",
+          parent: mockCommentId
+        });
+    
+      // get comment after adding response
+      const commentAfter = await Comment.findById(mockCommentId) as IComment;
+
+      expect(res.status).toEqual(200);
+      expect(/.+\/json/.test(res.type)).toBe(true);
+      expect(commentAfter.responses.length).toBe(
+        commentPreviously.responses.length + 1
+      );
   });
+
+  test("Not allowed if parent doesn't exist", async () => {
+    // Get previous number of responses in comment
+    const commentPreviously = await Comment.findById(mockCommentId) as IComment;
+
+    const res = await request(app)
+    .post(`/posts/${mockPostId}/comments/`)
+    .set("Content-Type", "application/json")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      text: "New fake comment",
+      parent: '123456789a123456789b1234'
+    });
+
+  // get comment after adding response
+  const commentAfter = await Comment.findById(mockCommentId);
+
+  expect(res.status).toEqual(400);
+  expect(res.body.errors[0].msg).toEqual("Parent comment doesn't exist");
+});
+
+test("Not allowed if parent isn't a valid id", async () => {
+  // Get previous number of responses in comment
+  const commentPreviously = await Comment.findById(mockCommentId) as IComment;
+
+  const res = await request(app)
+  .post(`/posts/${mockPostId}/comments/`)
+  .set("Content-Type", "application/json")
+  .set("Authorization", `Bearer ${token}`)
+  .send({
+    text: "New fake comment",
+    parent: '1234'
+  });
+
+// get comment after adding response
+const commentAfter = await Comment.findById(mockCommentId);
+
+expect(res.status).toEqual(400);
+expect(res.body.errors[0].msg).toEqual("Parent comment doesn't exist");
+});
 });

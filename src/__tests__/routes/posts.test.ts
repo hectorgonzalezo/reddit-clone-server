@@ -456,7 +456,6 @@ describe("PUT/update posts", () => {
     await Post.findByIdAndDelete(mockPost2Id);
   });
 
- 
   test("Allowed for logged in regular user which is the post creator", async () => {
     const updatedPost = {
       title: "An updated mock post",
