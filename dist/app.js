@@ -8,6 +8,10 @@ const express_1 = __importDefault(require("express"));
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
+const compression = require("compression");
+const helmet = require("helmet");
+const enforceSSL = require("express-enforces-ssl");
+const ms = require("ms");
 // Get .env
 if (process.env.NODE_ENV !== "production") {
     require("dotenv").config();
@@ -19,6 +23,18 @@ const communitiesRouter = require("./routes/communities");
 const postsRouter = require("./routes/posts");
 const commentsRouter = require("./routes/comments");
 const app = (0, express_1.default)();
+// compress all routes
+app.use(compression());
+app.use(helmet());
+// force secure http if not in development mode
+if (process.env.NODE_ENV !== "development") {
+    app.enable("trust proxy");
+    app.use(enforceSSL());
+    app.use(helmet.hsts({
+        maxAge: ms("1 year"),
+        includeSubdomains: true,
+    }));
+}
 app.use(logger("dev"));
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: false }));

@@ -4,6 +4,10 @@ import express, { Request, Response, NextFunction } from "express";
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
+const compression = require("compression");
+const helmet = require("helmet");
+const enforceSSL = require("express-enforces-ssl");
+const ms = require("ms");
 
 // Get .env
 if (process.env.NODE_ENV !== "production") {
@@ -19,6 +23,20 @@ const postsRouter = require("./routes/posts");
 const commentsRouter = require("./routes/comments");
 
 const app = express();
+
+// compress all routes
+app.use(compression());
+app.use(helmet());
+
+// force secure http if not in development mode
+if (process.env.NODE_ENV !== "development") {
+  app.enable("trust proxy");
+  app.use(enforceSSL());
+  app.use(helmet.hsts({
+    maxAge: ms("1 year"),
+    includeSubdomains: true,
+  }));
+}
 
 app.use(logger("dev"));
 app.use(express.json());
