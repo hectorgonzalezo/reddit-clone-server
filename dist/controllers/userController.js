@@ -158,6 +158,11 @@ exports.user_update = [
         .withMessage("Password must be at least 6 characters long")
         .custom((value, { req }) => value === req.body.password)
         .withMessage("Passwords don't match"),
+    (0, express_validator_1.body)("icon")
+        .optional()
+        .trim()
+        .isURL()
+        .withMessage("Icon can only be a URL"),
     (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const errors = (0, express_validator_1.validationResult)(req);
         // if validation didn't succeed
@@ -171,7 +176,6 @@ exports.user_update = [
             const previousUser = yield userModel_1.default.findById(req.params.id, {
                 username: 1,
                 email: 1,
-                icon: 1,
             });
             // encrypt password
             const hashedPassword = yield bcryptjs_1.default.hash(req.body.password, 10);
@@ -205,10 +209,6 @@ exports.user_update = [
             // If an icon is provided, add it to obj
             if (req.body.icon !== undefined) {
                 userObj.icon = req.body.icon;
-            }
-            else if (previousUser.icon !== undefined) {
-                // If an icon existed in previous user, add it to obj
-                userObj.icon = previousUser.icon;
             }
             // if no user exists with provided username, create one
             const newUser = new userModel_1.default(userObj);

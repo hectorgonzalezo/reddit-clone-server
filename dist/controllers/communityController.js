@@ -51,16 +51,7 @@ exports.community_create = [
         .custom((value) => {
         return /^[a-zA-Z0-9_]+$/.test(value);
     })
-        .withMessage("Only letters, numbers and underscore allowed in community name")
-        .custom((value) => __awaiter(void 0, void 0, void 0, function* () {
-        // Look for community in database
-        const existingCommunity = yield communityModel_1.default.find({ name: value });
-        // If it exists, show error
-        if (existingCommunity.length !== 0) {
-            return Promise.reject();
-        }
-    }))
-        .withMessage("Community name already exists"),
+        .withMessage("Only letters, numbers and underscore allowed in community name"),
     (0, express_validator_1.body)("subtitle", "Community subtitle is required")
         .trim()
         .isLength({ min: 3, max: 100 })
@@ -71,7 +62,7 @@ exports.community_create = [
         .isLength({ min: 3, max: 300 })
         .escape()
         .withMessage("Community description must be between 3 and 300 characters long"),
-    (0, express_validator_1.body)("icon").optional().trim().isURL().withMessage("Icon has to be a URl"),
+    (0, express_validator_1.body)("icon").optional().trim().isURL().withMessage("Icon can only be a URL"),
     (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const errors = (0, express_validator_1.validationResult)(req);
         // if validation didn't succeed
@@ -80,6 +71,20 @@ exports.community_create = [
             return res.status(400).send({ errors: errors.array() });
         }
         try {
+            // Look for this same community
+            const previousCommunity = yield communityModel_1.default.findById(req.params.id, {
+                name: 1,
+            });
+            // Look for community in database
+            const existingCommunity = yield communityModel_1.default.find({ name: req.body.name }, { name: 1 });
+            // if a community exist with that name, and it's not the community to be updated, send error
+            if (existingCommunity.length !== 0 &&
+                req.body.name !== (previousCommunity === null || previousCommunity === void 0 ? void 0 : previousCommunity.name)) {
+                // return error and user data filled so far
+                return res.status(400).send({
+                    errors: [{ msg: "Community name already exists", user: req.body }],
+                });
+            }
             // If no community with that name exists, create one
             const communityObj = {
                 name: req.body.name,
@@ -114,16 +119,7 @@ exports.community_update = [
         .custom((value) => {
         return /^[a-zA-Z0-9_]+$/.test(value);
     })
-        .withMessage("Only letters, numbers and underscore allowed in community name")
-        .custom((value) => __awaiter(void 0, void 0, void 0, function* () {
-        // Look for community in database
-        const existingCommunity = yield communityModel_1.default.find({ name: value });
-        // If it exists, show error
-        if (existingCommunity.length !== 0) {
-            return Promise.reject();
-        }
-    }))
-        .withMessage("Community name already exists"),
+        .withMessage("Only letters, numbers and underscore allowed in community name"),
     (0, express_validator_1.body)("subtitle", "Community subtitle is required")
         .trim()
         .isLength({ min: 3, max: 100 })
@@ -134,7 +130,7 @@ exports.community_update = [
         .isLength({ min: 3, max: 300 })
         .escape()
         .withMessage("Community description must be between 3 and 300 characters long"),
-    (0, express_validator_1.body)("icon").optional().trim().isURL().withMessage("Icon has to be a URl"),
+    (0, express_validator_1.body)("icon").optional().trim().isURL().withMessage("Icon can only be a URL"),
     (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const errors = (0, express_validator_1.validationResult)(req);
         // if validation didn't succeed
@@ -143,12 +139,22 @@ exports.community_update = [
             return res.status(400).send({ errors: errors.array() });
         }
         try {
-            let previousCommunity;
-            // Get posts and users from previous entry
-            previousCommunity = (yield communityModel_1.default.findById(req.params.id, {
+            // Look for this same community
+            const previousCommunity = yield communityModel_1.default.findById(req.params.id, {
+                name: 1,
                 users: 1,
                 posts: 1,
-            }));
+            });
+            // Look for community in database
+            const existingCommunity = yield communityModel_1.default.find({ name: req.body.name }, { name: 1 });
+            // if a community exist with that name, and it's not the community to be updated, send error
+            if (existingCommunity.length !== 0 &&
+                req.body.name !== (previousCommunity === null || previousCommunity === void 0 ? void 0 : previousCommunity.name)) {
+                // return error and user data filled so far
+                return res.status(400).send({
+                    errors: [{ msg: "Community name already exists", user: req.body }],
+                });
+            }
             if (previousCommunity === null) {
                 // If no community is found, send error;
                 return res

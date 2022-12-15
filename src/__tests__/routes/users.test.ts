@@ -226,6 +226,7 @@ describe("User update", () => {
     // As user it not signed it, no token should be returned
     expect(res.body).not.toHaveProperty("token");
   });
+  
   test("Update another field keeps icon", async () => {
     // log in and get token
     const logIn = await request(app)

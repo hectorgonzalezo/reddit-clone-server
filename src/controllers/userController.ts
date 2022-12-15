@@ -191,7 +191,6 @@ exports.user_update = [
       const previousUser = await User.findById(req.params.id, {
         username: 1,
         email: 1,
-        icon: 1,
       }) as IUser;
 
       // encrypt password
@@ -236,10 +235,7 @@ exports.user_update = [
       // If an icon is provided, add it to obj
       if (req.body.icon !== undefined) {
         userObj.icon = req.body.icon;
-      } else if (previousUser.icon !== undefined) {
-      // If an icon existed in previous user, add it to obj
-        userObj.icon = previousUser.icon;
-      }
+      } 
 
       // if no user exists with provided username, create one
       const newUser = new User(userObj);

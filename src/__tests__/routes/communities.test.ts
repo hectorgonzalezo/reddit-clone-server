@@ -23,10 +23,12 @@ let adminToken: string;
 let adminUserId: string;
 let mockCommunity: ICommunity;
 let mockCommunity2: ICommunity;
+let mockCommunityWithIcon: ICommunity;
 let mockCommunityWithPosts: ICommunity;
 let mockCommunityId: string;
 let mockCommunity2Id: string;
 let mockCommunityWithPostsId: string;
+let mockCommunityWithIconId: string;
 
 describe("GET communities", () => {
   // Add communities and user to mock database
@@ -73,12 +75,24 @@ describe("GET communities", () => {
       { versionKey: false }
     );
 
-    const [community1, community2] = await Promise.all([
+    mockCommunityWithIcon = new Community({
+      name: "mockCommunityWithIcon",
+      subtitle: "Fake community",
+      description: "This is a fake community created for testing purposes",
+      creator: userId,
+      users: [],
+      posts: [],
+      icon: "http://fakeIcon.com/icon"
+    });
+
+    const [community1, community2, communityWithIcon] = await Promise.all([
       mockCommunity.save(),
       mockCommunity2.save(),
+      mockCommunityWithIcon.save(),
     ]);
     mockCommunityId = community1._id.toString();
     mockCommunity2Id = community2._id.toString();
+    mockCommunityWithIconId = communityWithIcon._id.toString();
   });
 
   // remove communities and user from database
@@ -86,6 +100,7 @@ describe("GET communities", () => {
     await User.findByIdAndDelete(userId);
     await Community.findByIdAndDelete(mockCommunityId);
     await Community.findByIdAndDelete(mockCommunity2Id);
+    await Community.findByIdAndDelete(mockCommunityWithIconId);
   });
 
   test("Get all communities in database", async () => {
@@ -95,7 +110,7 @@ describe("GET communities", () => {
     expect(res.status).toEqual(200);
     expect(/.+\/json/.test(res.type)).toBe(true);
     // return both mock communities
-    expect(res.body.communities.length).toBe(2);
+    expect(res.body.communities.length).toBe(3);
   });
 
   test("Get info about a particular community", async () => {
@@ -111,6 +126,25 @@ describe("GET communities", () => {
     expect(res.body.community._id).toBe(mockCommunityId);
     expect(res.body.community.users).toEqual(mockCommunity.users);
     expect(res.body.community.posts).toEqual(mockCommunity.posts);
+    // community has no icon
+    expect(res.body.community.icon).toBe(undefined);
+  });
+
+  test("If community has icon, one is returned", async () => {
+    const res = await request(app).get(`/communities/${mockCommunityWithIconId}`);
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // Return the correct community info
+    expect(res.body.community.name).toBe(mockCommunityWithIcon.name);
+    expect(res.body.community.subtitle).toBe(mockCommunityWithIcon.subtitle);
+    expect(res.body.community.description).toBe(mockCommunityWithIcon.description);
+    expect(res.body.community._id).toBe(mockCommunityWithIconId);
+    expect(res.body.community.users).toEqual(mockCommunityWithIcon.users);
+    expect(res.body.community.posts).toEqual(mockCommunityWithIcon.posts);
+    // community has no icon
+    expect(res.body.community.icon).toBe(mockCommunityWithIcon.icon);
   });
 
   test("Looking for a non existing community returns an error", async () => {
@@ -217,6 +251,59 @@ describe("POST/create communities", () => {
     expect(res.body.community.creator.toString()).toBe(userId);
     expect(res.body.community.users).toEqual([]);
     expect(res.body.community.posts).toEqual([]);
+    // community has no icon by default
+    expect(res.body.community.icon).toBe(undefined);
+  });
+
+  test("Providing an icon, adds it to object", async () => {
+    const newCommunity = {
+      name: "newMockas",
+      subtitle: "New fake community",
+      description: "This is a new fake community created for testing purposes",
+      icon: "http://fake.com/icon"
+    };
+
+    const res = await request(app)
+      .post("/communities/")
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send(newCommunity);
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // Return the correct community info
+    expect(res.body.community.name).toBe(newCommunity.name);
+    expect(res.body.community.subtitle).toBe(newCommunity.subtitle);
+    expect(res.body.community.description).toBe(newCommunity.description);
+    // assign current user to be the community creator
+    expect(res.body.community.creator.toString()).toBe(userId);
+    expect(res.body.community.users).toEqual([]);
+    expect(res.body.community.posts).toEqual([]);
+    // community has no icon by default
+    expect(res.body.community.icon).toBe("http://fake.com/icon");
+  });
+
+  test("Not allowed if icon isn't a url", async () => {
+    const newCommunity = {
+      name: "newMockas2",
+      subtitle: "New fake community",
+      description: "This is a new fake community created for testing purposes",
+      icon: "1234",
+    };
+
+    const res = await request(app)
+      .post("/communities/")
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send(newCommunity);
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual(
+      "Icon can only be a URL"
+    );
   });
 
   test("Not allowed if user isn't logged in", async () => {
@@ -231,7 +318,7 @@ describe("POST/create communities", () => {
           "This is a new fake community created for testing purposes",
       });
 
-    // return ok status and json
+    // return unauthorized status and json
     expect(res.status).toEqual(403);
     expect(/.+\/json/.test(res.type)).toBe(true);
     // return both mock communities
@@ -558,7 +645,110 @@ describe("PUT/update communities", () => {
     expect(res.body.community.creator.toString()).toBe(userId);
     expect(res.body.community.users).toEqual([]);
     expect(res.body.community.posts).toEqual([]);
+    // There should be no icon
+    expect(res.body.community.icon).toBe(undefined);
   });
+
+  test("Allowed for logged in regular user which is the community creator", async () => {
+    const updatedCommunity = {
+      name: "updatedMock",
+      subtitle: "updated fake community",
+      description:
+        "This is a updated fake community created for testing purposes",
+    };
+
+    const res = await request(app)
+      .put(`/communities/${mockCommunityId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send(updatedCommunity);
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // Return the correct community info
+    expect(res.body.community.name).toBe(updatedCommunity.name);
+    expect(res.body.community.subtitle).toBe(updatedCommunity.subtitle);
+    expect(res.body.community.description).toBe(updatedCommunity.description);
+    // assign current user to be the community creator
+    expect(res.body.community.creator.toString()).toBe(userId);
+    expect(res.body.community.users).toEqual([]);
+    expect(res.body.community.posts).toEqual([]);
+    // There should be no icon
+    expect(res.body.community.icon).toBe(undefined);
+  });
+
+  test("Updating keeps the same users and posts", async () => {
+    const updatedCommunity = {
+      name: "updatedMocka",
+      subtitle: "updated fake community",
+      description:
+        "This is a updated fake community created for testing purposes",
+    };
+
+    const res = await request(app)
+      .put(`/communities/${mockCommunityWithPostsId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send(updatedCommunity);
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // Return the correct community info
+    expect(res.body.community.name).toBe(updatedCommunity.name);
+    expect(res.body.community.subtitle).toBe(updatedCommunity.subtitle);
+    expect(res.body.community.description).toBe(updatedCommunity.description);
+    // assign current user to be the community creator
+    expect(res.body.community.creator.toString()).toBe(userId);
+    // Keeps the same number of posts and users
+    expect(res.body.community.users.length).toBe(1);
+    expect(res.body.community.posts.length).toBe(1);
+  });
+
+  test("Adding an icon updates the icon in original community", async () => {
+    const updatedCommunity = {
+      name: "updatedMockAgain",
+      subtitle: "updated fake community",
+      description:
+        "This is a updated fake community created for testing purposes",
+      icon: 'http://fake.com/icon'
+    };
+
+    const res = await request(app)
+      .put(`/communities/${mockCommunityId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send(updatedCommunity);
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // There should be an icon
+    expect(res.body.community.icon).toBe("http://fake.com/icon");
+  });
+
+  test("Updating another field keeps the icon", async () => {
+    const updatedCommunity = {
+      name: "updatedMockAgain2",
+      subtitle: "updated fake community",
+      description:
+        "This is a updated fake community created for testing purposes",
+    };
+
+    const res = await request(app)
+      .put(`/communities/${mockCommunityId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send(updatedCommunity);
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // Icon should be the same
+    expect(res.body.community.icon).toBe("http://fake.com/icon");
+
+   });
 
   test("Not allowed if user isn't logged in", async () => {
     const res = await request(app)
@@ -602,33 +792,7 @@ describe("PUT/update communities", () => {
     });
   });
 
-  test("Updating keeps the same users and posts", async () => {
-    const updatedCommunity = {
-      name: "updatedMocka",
-      subtitle: "updated fake community",
-      description:
-        "This is a updated fake community created for testing purposes",
-    };
 
-    const res = await request(app)
-      .put(`/communities/${mockCommunityWithPostsId}`)
-      .set("Content-Type", "application/json")
-      .set("Authorization", `Bearer ${token}`)
-      .send(updatedCommunity);
-
-    expect(res.status).toEqual(200);
-    expect(/.+\/json/.test(res.type)).toBe(true);
-
-    // Return the correct community info
-    expect(res.body.community.name).toBe(updatedCommunity.name);
-    expect(res.body.community.subtitle).toBe(updatedCommunity.subtitle);
-    expect(res.body.community.description).toBe(updatedCommunity.description);
-    // assign current user to be the community creator
-    expect(res.body.community.creator.toString()).toBe(userId);
-    // Keeps the same number of posts and users
-    expect(res.body.community.users.length).toBe(1);
-    expect(res.body.community.posts.length).toBe(1);
-  });
 
   test("Name allows letters, numbers and underscore", async () => {
     const updatedCommunity = {

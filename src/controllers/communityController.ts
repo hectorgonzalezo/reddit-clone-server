@@ -51,16 +51,7 @@ exports.community_create = [
     })
     .withMessage(
       "Only letters, numbers and underscore allowed in community name"
-    )
-    .custom(async (value) => {
-      // Look for community in database
-      const existingCommunity = await Community.find({ name: value });
-      // If it exists, show error
-      if (existingCommunity.length !== 0) {
-        return Promise.reject();
-      }
-    })
-    .withMessage("Community name already exists"),
+    ),
   body("subtitle", "Community subtitle is required")
     .trim()
     .isLength({ min: 3, max: 100 })
@@ -75,7 +66,7 @@ exports.community_create = [
     .withMessage(
       "Community description must be between 3 and 300 characters long"
     ),
-  body("icon").optional().trim().isURL().withMessage("Icon has to be a URl"),
+  body("icon").optional().trim().isURL().withMessage("Icon can only be a URL"),
   async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     // if validation didn't succeed
@@ -84,6 +75,26 @@ exports.community_create = [
       return res.status(400).send({ errors: errors.array() });
     }
     try {
+      // Look for this same community
+      const previousCommunity = await Community.findById(req.params.id, {
+        name: 1,
+      });
+      // Look for community in database
+      const existingCommunity = await Community.find(
+        { name: req.body.name },
+        { name: 1 }
+      );
+      // if a community exist with that name, and it's not the community to be updated, send error
+      if (
+        existingCommunity.length !== 0 &&
+        req.body.name !== previousCommunity?.name
+      ) {
+        // return error and user data filled so far
+        return res.status(400).send({
+          errors: [{ msg: "Community name already exists", user: req.body }],
+        });
+      }
+
       // If no community with that name exists, create one
       const communityObj: ICommunity = {
         name: req.body.name,
@@ -123,16 +134,7 @@ exports.community_update = [
     })
     .withMessage(
       "Only letters, numbers and underscore allowed in community name"
-    )
-    .custom(async (value) => {
-      // Look for community in database
-      const existingCommunity = await Community.find({ name: value });
-      // If it exists, show error
-      if (existingCommunity.length !== 0) {
-        return Promise.reject();
-      }
-    })
-    .withMessage("Community name already exists"),
+    ),
   body("subtitle", "Community subtitle is required")
     .trim()
     .isLength({ min: 3, max: 100 })
@@ -147,7 +149,7 @@ exports.community_update = [
     .withMessage(
       "Community description must be between 3 and 300 characters long"
     ),
-  body("icon").optional().trim().isURL().withMessage("Icon has to be a URl"),
+  body("icon").optional().trim().isURL().withMessage("Icon can only be a URL"),
 
   async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
@@ -157,12 +159,27 @@ exports.community_update = [
       return res.status(400).send({ errors: errors.array() });
     }
     try {
-      let previousCommunity: ICommunity;
-      // Get posts and users from previous entry
-      previousCommunity = (await Community.findById(req.params.id, {
+      // Look for this same community
+      const previousCommunity = await Community.findById(req.params.id, {
+        name: 1,
         users: 1,
         posts: 1,
-      })) as ICommunity;
+      });
+      // Look for community in database
+      const existingCommunity = await Community.find(
+        { name: req.body.name },
+        { name: 1 }
+      );
+      // if a community exist with that name, and it's not the community to be updated, send error
+      if (
+        existingCommunity.length !== 0 &&
+        req.body.name !== previousCommunity?.name
+      ) {
+        // return error and user data filled so far
+        return res.status(400).send({
+          errors: [{ msg: "Community name already exists", user: req.body }],
+        });
+      }
 
       if (previousCommunity === null) {
         // If no community is found, send error;
