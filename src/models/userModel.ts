@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-import { IUser } from '../types/models';
+import mongoose from "mongoose";
+import { IUser } from "../types/models";
 
 // Texts if the email is valid using regexp
 const validateEmail = function (email: string) {

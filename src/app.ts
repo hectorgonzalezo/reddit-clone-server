@@ -1,35 +1,35 @@
-import createError, { HttpError } from 'http-errors';
+import createError, { HttpError } from "http-errors";
 import { ExtendedRequest } from "./types/extendedRequest";
-import express, { Request, Response, NextFunction } from 'express';
-const path = require('path');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
+import express, { Request, Response, NextFunction } from "express";
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const logger = require("morgan");
 
 // Get .env
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
-require('./mongoConfig');
+require("./mongoConfig");
 
-const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
-const communitiesRouter = require('./routes/communities');
-const postsRouter = require('./routes/posts');
-const commentsRouter = require('./routes/comments');
+const indexRouter = require("./routes/index");
+const usersRouter = require("./routes/users");
+const communitiesRouter = require("./routes/communities");
+const postsRouter = require("./routes/posts");
+const commentsRouter = require("./routes/comments");
 
 const app = express();
 
-app.use(logger('dev'));
+app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
-app.use('/', indexRouter);
-app.use('/users/', usersRouter);
-app.use('/communities', communitiesRouter);
-app.use('/posts/', postsRouter);
+app.use("/", indexRouter);
+app.use("/users/", usersRouter);
+app.use("/communities", communitiesRouter);
+app.use("/posts/", postsRouter);
 app.use(
   "/posts/:postId/comments/:commentId",
   (req: ExtendedRequest, res: Response, next: NextFunction) => {
@@ -48,7 +48,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use((err: HttpError, req: Request, res: Response, next: NextFunction) => {
   // set locals, only providing error in development
   res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+  res.locals.error = req.app.get("env") === "development" ? err : {};
 
   // render the error page
   res.status(err.status || 500);

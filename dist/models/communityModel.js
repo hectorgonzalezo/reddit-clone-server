@@ -26,10 +26,10 @@ const CommunitySchema = new Schema({
     posts: [{ type: Schema.Types.ObjectId, ref: "Post" }],
     icon: { type: String, required: false },
 });
-CommunitySchema.virtual('membersQuantity').get(function () {
+CommunitySchema.virtual("membersQuantity").get(function () {
     return this.users.length;
 });
-CommunitySchema.virtual('postsQuantity').get(function () {
+CommunitySchema.virtual("postsQuantity").get(function () {
     return this.posts.length;
 });
 exports.default = mongoose_1.default.model("Community", CommunitySchema);

@@ -1,13 +1,13 @@
 const request = require("supertest");
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction } from "express";
 const users = require("../../routes/users");
 const comments = require("../../routes/comments");
 import bcrypt from "bcryptjs";
 const initializeMongoServer = require("../../mongoConfigTesting");
 import Community from "../../models/communityModel";
-import Post from '../../models/postModel';
+import Post from "../../models/postModel";
 import User from "../../models/userModel";
-import Comment from '../../models/commentModel';
+import Comment from "../../models/commentModel";
 import { ExtendedRequest } from "../../types/extendedRequest";
 import { IComment, ICommunity } from "../../types/models";
 import { IPost } from "../../types/models";
@@ -24,7 +24,7 @@ app.use(
     req.postId = req.params.postId;
     next();
   },
- comments 
+  comments
 );
 app.use("/users/", users);
 
@@ -81,15 +81,14 @@ describe("GET comments", () => {
       users: [],
       posts: [],
     });
-    const community = await mockCommunity.save(); 
+    const community = await mockCommunity.save();
     mockCommunityId = community._id.toString();
-
 
     // Create mock response to be inserted into mockResponse
     mockCommentResponse2 = new Comment({
       text: "Mock response",
       user: userId,
-      upVotes: 3
+      upVotes: 3,
     });
 
     const commentResponse2 = await mockCommentResponse2.save();
@@ -100,22 +99,20 @@ describe("GET comments", () => {
       text: "Mock response",
       user: userId,
       upVotes: 3,
-      responses: [mockCommentResponse2Id]
+      responses: [mockCommentResponse2Id],
     });
 
     const commentResponse = await mockCommentResponse.save();
-    mockCommentResponseId = commentResponse._id.toString(); 
+    mockCommentResponseId = commentResponse._id.toString();
 
     mockComment = new Comment({
       text: "Mock comment",
       user: userId,
       upVotes: 1,
-      responses: [mockCommentResponse]
+      responses: [mockCommentResponse],
     });
 
-
     const comment = await mockComment.save();
-
 
     mockCommentId = comment._id.toString();
 
@@ -124,7 +121,7 @@ describe("GET comments", () => {
       text: "This is a mock post made for testing purposes",
       user: userId,
       community: mockCommunityId,
-      comments: [mockCommentId]
+      comments: [mockCommentId],
     });
 
     const post = await mockPost.save();
@@ -148,10 +145,8 @@ describe("GET comments", () => {
     expect(/.+\/json/.test(res.type)).toBe(true);
     // return both mock comments
     expect(res.body.comments.length).toBe(1);
-    expect(res.body.comments[0].text).toBe(mockComment.text)
+    expect(res.body.comments[0].text).toBe(mockComment.text);
   });
-
-  
 
   test("Comment responses are populated", async () => {
     const res = await request(app).get(`/posts/${mockPostId}/comments`);
@@ -161,8 +156,12 @@ describe("GET comments", () => {
     expect(/.+\/json/.test(res.type)).toBe(true);
     // return populated mock comment
     expect(res.body.comments[0].responses.length).toBe(1);
-    expect(res.body.comments[0].responses[0].text).toBe(mockCommentResponse.text);
-    expect(res.body.comments[0].responses[0].responses[0].text).toBe(mockCommentResponse2.text);
+    expect(res.body.comments[0].responses[0].text).toBe(
+      mockCommentResponse.text
+    );
+    expect(res.body.comments[0].responses[0].responses[0].text).toBe(
+      mockCommentResponse2.text
+    );
   });
 
   test("Get a particular comment", async () => {
@@ -247,24 +246,25 @@ describe("POST/create comments", () => {
       users: [],
       posts: [],
     });
-    const community = await mockCommunity.save(); 
+    const community = await mockCommunity.save();
     mockCommunityId = community._id.toString();
-
 
     mockComment = new Comment({
       text: "Mock comment",
       user: userId,
-      upVotes: 1
+      upVotes: 1,
     });
 
     mockComment2 = new Comment({
       text: "Mock comment2",
       user: userId,
-      upVotes: 1
+      upVotes: 1,
     });
 
-    const [comment1, comment2] = await Promise.all([mockComment.save(), mockComment2.save()]);
-
+    const [comment1, comment2] = await Promise.all([
+      mockComment.save(),
+      mockComment2.save(),
+    ]);
 
     mockCommentId = comment1._id.toString();
     mockComment2Id = comment2._id.toString();
@@ -274,7 +274,7 @@ describe("POST/create comments", () => {
       text: "This is a mock post made for testing purposes",
       user: userId,
       community: mockCommunityId,
-      comments: [mockCommentId, mockComment2Id]
+      comments: [mockCommentId, mockComment2Id],
     });
 
     const post = await mockPost.save();
@@ -292,7 +292,6 @@ describe("POST/create comments", () => {
   });
 
   test("Allowed for logged in regular user", async () => {
-
     const res = await request(app)
       .post(`/posts/${mockPostId}/comments/`)
       .set("Content-Type", "application/json")
@@ -315,9 +314,8 @@ describe("POST/create comments", () => {
   });
 
   test("Not allowed if user isn't logged in", async () => {
-
     const res = await request(app)
-    .post(`/posts/${mockPostId}/comments/`)
+      .post(`/posts/${mockPostId}/comments/`)
       .set("Content-Type", "application/json")
       // don't send authorization
       .send({
@@ -334,9 +332,8 @@ describe("POST/create comments", () => {
   });
 
   test("Not allowed with no text", async () => {
-
     const res = await request(app)
-    .post(`/posts/${mockPostId}/comments/`)
+      .post(`/posts/${mockPostId}/comments/`)
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
       .send({});
@@ -349,93 +346,97 @@ describe("POST/create comments", () => {
 
   test("Adding a comment without parent adds it to the post", async () => {
     // Get previous number of comments
-    const postPreviously = await Post.findById(mockPostId) as IPost;
-    
+    const postPreviously = (await Post.findById(mockPostId)) as IPost;
+
     const res = await request(app)
-    .post(`/posts/${mockPostId}/comments/`)
-    .set("Content-Type", "application/json")
-    .set("Authorization", `Bearer ${token}`)
-    .send({
-      text: "New fake comment",
-    });
+      .post(`/posts/${mockPostId}/comments/`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        text: "New fake comment",
+      });
 
     // get post after adding comments
-    const postAfter = await Post.findById(mockPostId) as IPost;
+    const postAfter = (await Post.findById(mockPostId)) as IPost;
 
-  expect(res.status).toEqual(200);
-  expect(/.+\/json/.test(res.type)).toBe(true);
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
 
-  expect(postAfter).not.toBe(null);
-  expect(postPreviously).not.toBe(null);
-  // check if a response was added
-  expect(postAfter.comments.length).toBe(postPreviously.comments.length + 1);
+    expect(postAfter).not.toBe(null);
+    expect(postPreviously).not.toBe(null);
+    // check if a response was added
+    expect(postAfter.comments.length).toBe(postPreviously.comments.length + 1);
   });
 
   test("Comments can be added as responses by setting a parent", async () => {
-        // Get previous number of responses in comment
-        const commentPreviously = await Comment.findById(mockCommentId) as IComment;
-    
-        const res = await request(app)
-        .post(`/posts/${mockPostId}/comments/`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          text: "New fake comment",
-          parent: mockCommentId
-        });
-    
-      // get comment after adding response
-      const commentAfter = await Comment.findById(mockCommentId) as IComment;
+    // Get previous number of responses in comment
+    const commentPreviously = (await Comment.findById(
+      mockCommentId
+    )) as IComment;
 
-      expect(res.status).toEqual(200);
-      expect(/.+\/json/.test(res.type)).toBe(true);
-      expect(commentAfter.responses.length).toBe(
-        commentPreviously.responses.length + 1
-      );
+    const res = await request(app)
+      .post(`/posts/${mockPostId}/comments/`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        text: "New fake comment",
+        parent: mockCommentId,
+      });
+
+    // get comment after adding response
+    const commentAfter = (await Comment.findById(mockCommentId)) as IComment;
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    expect(commentAfter.responses.length).toBe(
+      commentPreviously.responses.length + 1
+    );
   });
 
   test("Not allowed if parent doesn't exist", async () => {
     // Get previous number of responses in comment
-    const commentPreviously = await Comment.findById(mockCommentId) as IComment;
+    const commentPreviously = (await Comment.findById(
+      mockCommentId
+    )) as IComment;
 
     const res = await request(app)
-    .post(`/posts/${mockPostId}/comments/`)
-    .set("Content-Type", "application/json")
-    .set("Authorization", `Bearer ${token}`)
-    .send({
-      text: "New fake comment",
-      parent: '123456789a123456789b1234'
-    });
+      .post(`/posts/${mockPostId}/comments/`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        text: "New fake comment",
+        parent: "123456789a123456789b1234",
+      });
 
-  // get comment after adding response
-  const commentAfter = await Comment.findById(mockCommentId);
+    // get comment after adding response
+    const commentAfter = await Comment.findById(mockCommentId);
 
-  expect(res.status).toEqual(400);
-  expect(res.body.errors[0].msg).toEqual("Parent comment doesn't exist");
-});
-
-test("Not allowed if parent isn't a valid id", async () => {
-  // Get previous number of responses in comment
-  const commentPreviously = await Comment.findById(mockCommentId) as IComment;
-
-  const res = await request(app)
-  .post(`/posts/${mockPostId}/comments/`)
-  .set("Content-Type", "application/json")
-  .set("Authorization", `Bearer ${token}`)
-  .send({
-    text: "New fake comment",
-    parent: '1234'
+    expect(res.status).toEqual(400);
+    expect(res.body.errors[0].msg).toEqual("Parent comment doesn't exist");
   });
 
-// get comment after adding response
-const commentAfter = await Comment.findById(mockCommentId);
+  test("Not allowed if parent isn't a valid id", async () => {
+    // Get previous number of responses in comment
+    const commentPreviously = (await Comment.findById(
+      mockCommentId
+    )) as IComment;
 
-expect(res.status).toEqual(400);
-expect(res.body.errors[0].msg).toEqual("Parent comment doesn't exist");
+    const res = await request(app)
+      .post(`/posts/${mockPostId}/comments/`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        text: "New fake comment",
+        parent: "1234",
+      });
+
+    // get comment after adding response
+    const commentAfter = await Comment.findById(mockCommentId);
+
+    expect(res.status).toEqual(400);
+    expect(res.body.errors[0].msg).toEqual("Parent comment doesn't exist");
+  });
 });
-});
-
-
 
 // Update comments
 describe("PUT/update comments", () => {
@@ -461,29 +462,29 @@ describe("PUT/update comments", () => {
     const adminUserData = await adminUser.save();
 
     const logIn = await request(app)
-    .post("/users/log-in")
-    .set("Content-Type", "application/json")
-    .send({
-      username: "mocka",
-      password: "hashedPassword",
-    });
+      .post("/users/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
 
-  token = logIn.body.token;
-  userId = logIn.body.user._id.toString();
+    token = logIn.body.token;
+    userId = logIn.body.user._id.toString();
 
-  const logIn2 = await request(app)
-    .post("/users/log-in")
-    .set("Content-Type", "application/json")
-    .send({
-      username: "mockas",
-      password: "hashedPassword",
-    });
+    const logIn2 = await request(app)
+      .post("/users/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mockas",
+        password: "hashedPassword",
+      });
 
-  token = logIn.body.token;
-  userId = logIn.body.user._id.toString();
+    token = logIn.body.token;
+    userId = logIn.body.user._id.toString();
 
-  adminToken = logIn2.body.token;
-  adminUserId = logIn2.body.user._id.toString();
+    adminToken = logIn2.body.token;
+    adminUserId = logIn2.body.user._id.toString();
 
     mockCommunity = new Community({
       name: "mockCommunity",
@@ -493,25 +494,26 @@ describe("PUT/update comments", () => {
       users: [],
       posts: [],
     });
-    const community = await mockCommunity.save(); 
+    const community = await mockCommunity.save();
     mockCommunityId = community._id.toString();
-
 
     mockComment = new Comment({
       text: "Mock comment",
       user: userId,
-      upVotes: 1
+      upVotes: 1,
     });
 
     mockComment2 = new Comment({
       text: "Mock comment2",
       user: adminUserId,
       upVotes: 13,
-      responses: [mockCommentId]
+      responses: [mockCommentId],
     });
 
-    const [comment1, comment2] = await Promise.all([mockComment.save(), mockComment2.save()]);
-
+    const [comment1, comment2] = await Promise.all([
+      mockComment.save(),
+      mockComment2.save(),
+    ]);
 
     mockCommentId = comment1._id.toString();
     mockComment2Id = comment2._id.toString();
@@ -521,7 +523,7 @@ describe("PUT/update comments", () => {
       text: "This is a mock post made for testing purposes",
       user: userId,
       community: mockCommunityId,
-      comments: [mockComment2Id]
+      comments: [mockComment2Id],
     });
 
     const post = await mockPost.save();
@@ -532,6 +534,7 @@ describe("PUT/update comments", () => {
   // remove communities and user from database
   afterAll(async () => {
     await User.findByIdAndDelete(userId);
+    await User.findByIdAndDelete(adminUserId);
     await Community.findByIdAndDelete(mockCommunityId);
     await Post.findByIdAndDelete(mockPostId);
     await Comment.findByIdAndDelete(mockCommentId);
@@ -539,7 +542,6 @@ describe("PUT/update comments", () => {
   });
 
   test("Allowed for logged in regular user which is the comment creator", async () => {
-
     const res = await request(app)
       .put(`/posts/${mockPostId}/comments/${mockCommentId}/`)
       .set("Content-Type", "application/json")
@@ -547,7 +549,6 @@ describe("PUT/update comments", () => {
       .send({
         text: "This is an updated comment",
       });
-
 
     expect(res.status).toEqual(200);
     expect(/.+\/json/.test(res.type)).toBe(true);
@@ -561,14 +562,13 @@ describe("PUT/update comments", () => {
   });
 
   test("Not allowed if user isn't logged in", async () => {
-
     const res = await request(app)
-    .put(`/posts/${mockPostId}/comments/${mockCommentId}/`)
-    .set("Content-Type", "application/json")
-    // No authorization
-    .send({
-      text: "This is an updated post",
-    });
+      .put(`/posts/${mockPostId}/comments/${mockCommentId}/`)
+      .set("Content-Type", "application/json")
+      // No authorization
+      .send({
+        text: "This is an updated post",
+      });
 
     // return unauthorized status and json
     expect(res.status).toEqual(403);
@@ -609,7 +609,6 @@ describe("PUT/update comments", () => {
   });
 
   test("Not allowed with no text", async () => {
-
     const res = await request(app)
       .put(`/posts/${mockPostId}/comments/${mockCommentId}/`)
       .set("Content-Type", "application/json")
@@ -624,27 +623,29 @@ describe("PUT/update comments", () => {
 
   test("Parents can't be changed", async () => {
     // Get previous number of responses in comment
-    const commentPreviously = await Comment.findById(mockComment2Id) as IComment;
+    const commentPreviously = (await Comment.findById(
+      mockComment2Id
+    )) as IComment;
 
     const res = await request(app)
-    .put(`/posts/${mockPostId}/comments/${mockCommentId}/`)
-    .set("Content-Type", "application/json")
-    .set("Authorization", `Bearer ${token}`)
-    .send({
-      text: "New fake comment",
-      parent: mockComment2Id
-    });
+      .put(`/posts/${mockPostId}/comments/${mockCommentId}/`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        text: "New fake comment",
+        parent: mockComment2Id,
+      });
 
-  // get comment after adding response
-  const commentAfter = await Comment.findById(mockComment2Id) as IComment;
+    // get comment after adding response
+    const commentAfter = (await Comment.findById(mockComment2Id)) as IComment;
 
-  expect(res.status).toEqual(200);
-  expect(/.+\/json/.test(res.type)).toBe(true);
-  // Parent responses shouldn't change
-  expect(commentAfter.responses.length).toBe(
-    commentPreviously.responses.length
-  );
-});
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // Parent responses shouldn't change
+    expect(commentAfter.responses.length).toBe(
+      commentPreviously.responses.length
+    );
+  });
 
   test("Updating a non existing post returns an error", async () => {
     const res = await request(app)
@@ -674,5 +675,174 @@ describe("PUT/update comments", () => {
 
     expect(res.status).toEqual(404);
   });
-  
+});
+
+// Deletecomments
+describe("DELETE comments", () => {
+  // Add communities, user and comments to mock database
+  beforeAll(async () => {
+    const hashedPassword = await bcrypt.hash("hashedPassword", 10);
+    const regularUser = new User({
+      username: "mocka",
+      email: "mocka@mocka.com",
+      password: hashedPassword,
+      permission: "regular",
+    });
+
+    const user = await regularUser.save();
+
+    const adminUser = new User({
+      username: "mockas",
+      email: "mockas@mockas.com",
+      password: hashedPassword,
+      permission: "admin",
+    });
+
+    const adminUserData = await adminUser.save();
+
+    const logIn = await request(app)
+      .post("/users/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    token = logIn.body.token;
+    userId = logIn.body.user._id.toString();
+
+    const logIn2 = await request(app)
+      .post("/users/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mockas",
+        password: "hashedPassword",
+      });
+
+    token = logIn.body.token;
+    userId = logIn.body.user._id.toString();
+
+    adminToken = logIn2.body.token;
+    adminUserId = logIn2.body.user._id.toString();
+
+    mockCommunity = new Community({
+      name: "mockCommunity",
+      subtitle: "Fake community",
+      description: "This is a fake community created for testing purposes",
+      creator: userId,
+      users: [],
+      posts: [],
+    });
+    const community = await mockCommunity.save();
+    mockCommunityId = community._id.toString();
+
+    mockComment = new Comment({
+      text: "Mock comment",
+      user: userId,
+      upVotes: 1,
+    });
+
+    mockComment2 = new Comment({
+      text: "Mock comment2",
+      user: adminUserId,
+      upVotes: 13,
+      responses: [mockCommentId],
+    });
+
+    const [comment1, comment2] = await Promise.all([
+      mockComment.save(),
+      mockComment2.save(),
+    ]);
+
+    mockCommentId = comment1._id.toString();
+    mockComment2Id = comment2._id.toString();
+
+    mockPost = new Post({
+      title: "Mock post",
+      text: "This is a mock post made for testing purposes",
+      user: userId,
+      community: mockCommunityId,
+      comments: [mockComment2Id],
+    });
+
+    const post = await mockPost.save();
+
+    mockPostId = post._id.toString();
+  });
+
+  // remove communities and user from database
+  afterAll(async () => {
+    await User.findByIdAndDelete(userId);
+    await Community.findByIdAndDelete(mockCommunityId);
+    await Post.findByIdAndDelete(mockPostId);
+    await Comment.findByIdAndDelete(mockCommentId);
+    await Comment.findByIdAndDelete(mockComment2Id);
+  });
+
+  test("Allowed for logged in regular user which is the comment creator", async () => {
+    const res = await request(app)
+      .delete(`/posts/${mockPostId}/comments/${mockCommentId}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    // return ok status and json
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return delete message
+    expect(res.body.msg).toBe(`Comment ${mockCommentId} deleted`);
+
+    // Look for comment, it shouldn't be there
+    const comment = await Comment.findById(mockCommentId);
+    expect(comment).toBe(null);
+  });
+
+  test("Not allowed if user isn't logged in", async () => {
+    const res = await request(app).delete(
+      `/posts/${mockPostId}/comments/${mockCommentId}`
+    );
+
+    // return unauthorized status and json
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return both mock comments
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only the comment creator can delete it" }],
+    });
+  });
+
+  test("Not allowed if user isn't the comment creator", async () => {
+    const res = await request(app)
+      .delete(`/posts/${mockPostId}/comments/${mockComment2Id}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    // return unauthorized status and json
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return both mock comments
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only the comment creator can delete it" }],
+    });
+  });
+
+  test("Deleting a non existing comment returns an error", async () => {
+    const res = await request(app)
+      .delete(`/posts/${mockPostId}/comments/123456789a123456789b1234`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(res.status).toEqual(404);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // returns error if user is not authorized
+    expect(res.body.error).toEqual(
+      "No comment with id 123456789a123456789b1234 found"
+    );
+  });
+
+  test("Deleting a comment with a string that doesn't match and id doesn't return anything", async () => {
+    const res = await request(app)
+      .delete(`/posts/${mockPostId}/comments/12345`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(res.status).toEqual(404);
+  });
 });

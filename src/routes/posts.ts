@@ -1,9 +1,9 @@
-import express, { Request, Response, NextFunction } from 'express';
-import passport from 'passport';
-import Post from '../models/postModel';
-const postsController = require('../controllers/postController');
+import express, { Request, Response, NextFunction } from "express";
+import passport from "passport";
+import Post from "../models/postModel";
+const postsController = require("../controllers/postController");
 const router = express.Router();
-import { IUser } from 'src/types/models';
+import { IUser } from "src/types/models";
 
 // GET all posts
 router.get("/", postsController.posts_list);
@@ -45,9 +45,8 @@ router.put(
       "jwt",
       { session: false },
       async (err: any, user: IUser) => {
-        const post = await Post.findById(req.params.id, { user: 1});
-        const isUserCreator =
-          post?.user.toString() === user._id?.toString();
+        const post = await Post.findById(req.params.id, { user: 1 });
+        const isUserCreator = post?.user.toString() === user._id?.toString();
         const isUserAdmin = user.permission === "admin";
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
           // if user is not admin, return error
@@ -75,7 +74,7 @@ router.delete(
       "jwt",
       { session: false },
       async (err: any, user: IUser) => {
-        const post = await Post.findById(req.params.id, { user: 1});
+        const post = await Post.findById(req.params.id, { user: 1 });
         const isUserCreator = post?.user.toString() === user._id?.toString();
         const isUserAdmin = user.permission === "admin";
         if (err || !user || (!isUserCreator && !isUserAdmin)) {

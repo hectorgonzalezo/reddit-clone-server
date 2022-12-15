@@ -240,8 +240,6 @@ describe("POST/create communities", () => {
     });
   });
 
-
-
   test("Name allows letters, numbers and underscore", async () => {
     const newCommunity = {
       name: "newMock1234_",
@@ -963,7 +961,6 @@ describe("DELETE communities", () => {
   });
 
   test("Allowed for logged in regular user which is the community creator", async () => {
-
     const res = await request(app)
       .delete(`/communities/${mockCommunityId}`)
       .set("Authorization", `Bearer ${token}`);
@@ -1018,7 +1015,6 @@ describe("DELETE communities", () => {
   });
 
   test("Deleting a community with a string that doesn't match and id doesn't return anything", async () => {
-
     const res = await request(app)
       .delete("/communities/12345")
       .set("Content-Type", "application/json")

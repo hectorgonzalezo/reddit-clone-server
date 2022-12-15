@@ -48,7 +48,7 @@ passport.use(
       secretOrKey: process.env.AUTH_SECRET as string,
     },
     (jwtPayload: any, cb: Function) => {
-      // find the user in db 
+      // find the user in db
       return User.findById(jwtPayload._id, (err: MongoError, user: any) => {
         if (err) {
           return cb(err);

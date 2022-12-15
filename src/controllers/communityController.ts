@@ -1,8 +1,8 @@
-import Community from '../models/communityModel';
-import { body, validationResult } from 'express-validator';
-import { QueryOptions } from 'mongoose';
-import { NextFunction, Request, Response } from 'express';
-import { ICommunity } from 'src/types/models';
+import Community from "../models/communityModel";
+import { body, validationResult } from "express-validator";
+import { QueryOptions } from "mongoose";
+import { NextFunction, Request, Response } from "express";
+import { ICommunity } from "src/types/models";
 
 // List all communities in database
 exports.communities_list = async (
@@ -51,7 +51,8 @@ exports.community_create = [
     })
     .withMessage(
       "Only letters, numbers and underscore allowed in community name"
-    ).custom(async (value) => {
+    )
+    .custom(async (value) => {
       // Look for community in database
       const existingCommunity = await Community.find({ name: value });
       // If it exists, show error
@@ -64,17 +65,17 @@ exports.community_create = [
     .trim()
     .isLength({ min: 3, max: 100 })
     .escape()
-    .withMessage("Community subtitle must be between 3 and 100 characters long"),
+    .withMessage(
+      "Community subtitle must be between 3 and 100 characters long"
+    ),
   body("description", "Community description is required")
     .trim()
     .isLength({ min: 3, max: 300 })
     .escape()
-    .withMessage("Community description must be between 3 and 300 characters long"),
-  body("icon")
-    .optional()
-    .trim()
-    .isURL()
-    .withMessage("Icon has to be a URl"),
+    .withMessage(
+      "Community description must be between 3 and 300 characters long"
+    ),
+  body("icon").optional().trim().isURL().withMessage("Icon has to be a URl"),
   async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     // if validation didn't succeed
@@ -83,7 +84,6 @@ exports.community_create = [
       return res.status(400).send({ errors: errors.array() });
     }
     try {
-
       // If no community with that name exists, create one
       const communityObj: ICommunity = {
         name: req.body.name,
@@ -100,7 +100,7 @@ exports.community_create = [
 
       const newCommunity = new Community(communityObj);
 
-      // Save it to database  
+      // Save it to database
       const savedCommunity = await newCommunity.save();
 
       return res.send({ community: savedCommunity });
@@ -123,7 +123,8 @@ exports.community_update = [
     })
     .withMessage(
       "Only letters, numbers and underscore allowed in community name"
-    ).custom(async (value) => {
+    )
+    .custom(async (value) => {
       // Look for community in database
       const existingCommunity = await Community.find({ name: value });
       // If it exists, show error
@@ -136,18 +137,18 @@ exports.community_update = [
     .trim()
     .isLength({ min: 3, max: 100 })
     .escape()
-    .withMessage("Community subtitle must be between 3 and 100 characters long"),
+    .withMessage(
+      "Community subtitle must be between 3 and 100 characters long"
+    ),
   body("description", "Community description is required")
     .trim()
     .isLength({ min: 3, max: 300 })
     .escape()
-    .withMessage("Community description must be between 3 and 300 characters long"),
-  body("icon")
-    .optional()
-    .trim()
-    .isURL()
-    .withMessage("Icon has to be a URl"),
-   
+    .withMessage(
+      "Community description must be between 3 and 300 characters long"
+    ),
+  body("icon").optional().trim().isURL().withMessage("Icon has to be a URl"),
+
   async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     // if validation didn't succeed
@@ -156,7 +157,6 @@ exports.community_update = [
       return res.status(400).send({ errors: errors.array() });
     }
     try {
-
       let previousCommunity: ICommunity;
       // Get posts and users from previous entry
       previousCommunity = (await Community.findById(req.params.id, {
@@ -170,7 +170,7 @@ exports.community_update = [
           .status(404)
           .send({ error: `No community with id ${req.params.id} found` });
       }
-      
+
       // If no community with that name exists, create one
       const communityObj: ICommunity = {
         name: req.body.name,
@@ -188,7 +188,7 @@ exports.community_update = [
       }
 
       const newCommunity = new Community(communityObj);
-      // option to return updated community 
+      // option to return updated community
       const updateOptions: QueryOptions & { rawResult: true } = {
         new: true,
         upsert: true,

@@ -31,7 +31,9 @@ exports.post_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, func
     try {
         const post = yield postModel_1.default.findById(req.params.id);
         if (post === null) {
-            return res.status(404).send({ error: `No post with id ${req.params.id} found` });
+            return res
+                .status(404)
+                .send({ error: `No post with id ${req.params.id} found` });
         }
         return res.status(200).send({ post });
     }
@@ -126,10 +128,16 @@ exports.post_update = [
         try {
             let previousPost;
             // Get upvotes and comments from previous entry
-            previousPost = (yield postModel_1.default.findById(req.params.id));
+            previousPost = (yield postModel_1.default.findById(req.params.id, {
+                community: 1,
+                upVotes: 1,
+                comments: 1,
+            }));
             if (previousPost === null) {
                 // If no community is found, send error;
-                return res.status(404).send({ error: `No post with id ${req.params.id} found` });
+                return res
+                    .status(404)
+                    .send({ error: `No post with id ${req.params.id} found` });
             }
             // Create a new post
             const newPost = new postModel_1.default({
@@ -162,7 +170,9 @@ exports.post_delete = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         const post = yield postModel_1.default.findByIdAndDelete(req.params.id);
         // if post doesn't exist, send error
         if (post === null) {
-            return res.status(404).send({ error: `No post with id ${req.params.id} found` });
+            return res
+                .status(404)
+                .send({ error: `No post with id ${req.params.id} found` });
         }
         return res.send({ msg: `Post ${req.params.id} deleted` });
     }

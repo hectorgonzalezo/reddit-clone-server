@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 const initializeMongoServer = require("../../mongoConfigTesting");
 import Community from "../../models/communityModel";
 import Post from "../../models/postModel";
-import Comment from '../../models/commentModel';
+import Comment from "../../models/commentModel";
 import User from "../../models/userModel";
 import { ICommunity, IPost } from "../../types/models";
 
@@ -333,7 +333,7 @@ describe("POST/create posts", () => {
     const newPost = {
       title: "newMock",
       text: "New post",
-      community: "123456789a123456789b1234"
+      community: "123456789a123456789b1234",
     };
 
     const res = await request(app)
@@ -348,8 +348,6 @@ describe("POST/create posts", () => {
     expect(res.body.errors[0].msg).toEqual("Community doesn't exist");
   });
 });
-
-
 
 //  Update posts
 describe("PUT/update posts", () => {
@@ -418,7 +416,7 @@ describe("PUT/update posts", () => {
       text: "Mock Comment",
       user: userId,
       upVotes: 0,
-    })
+    });
 
     const comment = await mockComment.save();
 
@@ -467,7 +465,6 @@ describe("PUT/update posts", () => {
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
       .send(updatedPost);
-
 
     expect(res.status).toEqual(200);
     expect(/.+\/json/.test(res.type)).toBe(true);
@@ -535,9 +532,9 @@ describe("PUT/update posts", () => {
     expect(res.status).toEqual(200);
     expect(/.+\/json/.test(res.type)).toBe(true);
 
-  expect(res.body.post.community).toBe(mockCommunityId);
-  expect(res.body.post.upVotes).toEqual(13);
-  expect(res.body.post.comments.length).toEqual(1);
+    expect(res.body.post.community).toBe(mockCommunityId);
+    expect(res.body.post.upVotes).toEqual(13);
+    expect(res.body.post.comments.length).toEqual(1);
   });
 
   test("Not allowed with short title", async () => {
@@ -600,17 +597,14 @@ describe("PUT/update posts", () => {
     // return Bad request error code
     expect(res.status).toEqual(400);
     expect(res.body.errors).not.toBe(undefined);
-    expect(res.body.errors[0].msg).toEqual(
-      "Post text can't be empty"
-    );
+    expect(res.body.errors[0].msg).toEqual("Post text can't be empty");
   });
-
 
   test("Not allowed if community doesn't exist", async () => {
     const updatedPost = {
       title: "An updated mock post",
       text: "An updated fake post",
-      community: "123456789a123456789b1234"
+      community: "123456789a123456789b1234",
     };
 
     const res = await request(app)
@@ -659,11 +653,7 @@ describe("PUT/update posts", () => {
 
     expect(res.status).toEqual(404);
   });
-  
 });
-
-
-
 
 //  Delete posts
 describe("DELETE posts", () => {
@@ -732,7 +722,7 @@ describe("DELETE posts", () => {
       text: "Mock Comment",
       user: userId,
       upVotes: 0,
-    })
+    });
 
     const comment = await mockComment.save();
 
@@ -768,7 +758,6 @@ describe("DELETE posts", () => {
     await Post.findByIdAndDelete(mockPostId);
   });
 
-
   test("Allowed for logged in regular user which is the post creator", async () => {
     const res = await request(app)
       .delete(`/posts/${mockPostId}`)
@@ -798,7 +787,9 @@ describe("DELETE posts", () => {
   });
 
   test("Not allowed if user isn't the post creator", async () => {
-    const res = await request(app).delete(`/posts/${mockPost2Id}`);
+    const res = await request(app)
+      .delete(`/posts/${mockPost2Id}`)
+      .set("Authorization", `Bearer ${token}`);
 
     // return unauthorized status and json
     expect(res.status).toEqual(403);
@@ -810,7 +801,6 @@ describe("DELETE posts", () => {
   });
 
   test("Deleting a non existing post returns an error", async () => {
-
     const res = await request(app)
       .delete("/posts/123456789a123456789b1234")
       .set("Content-Type", "application/json")
@@ -832,5 +822,4 @@ describe("DELETE posts", () => {
 
     expect(res.status).toEqual(404);
   });
-  
-})
+});

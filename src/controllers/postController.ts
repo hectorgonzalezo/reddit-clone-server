@@ -1,14 +1,18 @@
-import Post from '../models/postModel';
-import Community from '../models/communityModel';
-import { QueryOptions } from 'mongoose';
-import { Request, Response, NextFunction } from 'express';
-import { body, validationResult } from 'express-validator';
-import { IPost } from 'src/types/models';
+import Post from "../models/postModel";
+import Community from "../models/communityModel";
+import { QueryOptions } from "mongoose";
+import { Request, Response, NextFunction } from "express";
+import { body, validationResult } from "express-validator";
+import { IPost } from "src/types/models";
 
 // List all posts in database
-exports.posts_list = async (req: Request, res: Response, next: NextFunction) => {
+exports.posts_list = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const posts = await Post.find(); 
+    const posts = await Post.find();
     return res.status(200).send({ posts });
   } catch (error) {
     return next(error);
@@ -17,11 +21,17 @@ exports.posts_list = async (req: Request, res: Response, next: NextFunction) => 
 
 // Display details about an individual post
 // GET post
-exports.post_detail = async (req: Request, res: Response, next: NextFunction) => {
+exports.post_detail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const post = await Post.findById(req.params.id); 
+    const post = await Post.findById(req.params.id);
     if (post === null) {
-      return res.status(404).send({ error: `No post with id ${req.params.id} found` });
+      return res
+        .status(404)
+        .send({ error: `No post with id ${req.params.id} found` });
     }
     return res.status(200).send({ post });
   } catch (error) {
@@ -118,11 +128,17 @@ exports.post_update = [
     try {
       let previousPost: IPost;
       // Get upvotes and comments from previous entry
-      previousPost = await Post.findById(req.params.id) as IPost;
+      previousPost = (await Post.findById(req.params.id, {
+        community: 1,
+        upVotes: 1,
+        comments: 1,
+      })) as IPost;
 
       if (previousPost === null) {
         // If no community is found, send error;
-        return res.status(404).send({ error: `No post with id ${req.params.id} found` });
+        return res
+          .status(404)
+          .send({ error: `No post with id ${req.params.id} found` });
       }
 
       // Create a new post
@@ -157,12 +173,18 @@ exports.post_update = [
 ];
 
 // DELETE post
-exports.post_delete = async (req: Request, res: Response, next: NextFunction) => {
+exports.post_delete = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const post = await Post.findByIdAndDelete(req.params.id);
     // if post doesn't exist, send error
     if (post === null) {
-      return res.status(404).send({ error: `No post with id ${req.params.id} found` }); 
+      return res
+        .status(404)
+        .send({ error: `No post with id ${req.params.id} found` });
     }
     return res.send({ msg: `Post ${req.params.id} deleted` });
   } catch (err) {

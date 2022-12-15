@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const passport_1 = __importDefault(require("passport"));
 const communityModel_1 = __importDefault(require("../models/communityModel"));
-const communitiesController = require('../controllers/communityController');
+const communitiesController = require("../controllers/communityController");
 const router = express_1.default.Router();
 // GET all communities
 router.get("/", communitiesController.communities_list);
@@ -43,9 +43,11 @@ router.post("/", (req, res, next) => {
 router.put("/:id([a-zA-Z0-9]{24})/", (req, res, next) => {
     passport_1.default.authenticate("jwt", { session: false }, (err, user) => __awaiter(void 0, void 0, void 0, function* () {
         var _a, _b;
-        const community = yield communityModel_1.default.findById(req.params.id, { creator: 1 });
+        const community = yield communityModel_1.default.findById(req.params.id, {
+            creator: 1,
+        });
         const isUserCreator = (community === null || community === void 0 ? void 0 : community.creator.toString()) === ((_a = user._id) === null || _a === void 0 ? void 0 : _a.toString());
-        const isUserAdmin = user.permission === 'admin';
+        const isUserAdmin = user.permission === "admin";
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
             // if user is not admin, return error
             return res.status(403).send({
@@ -65,9 +67,11 @@ router.put("/:id([a-zA-Z0-9]{24})/", (req, res, next) => {
 router.delete("/:id([a-zA-Z0-9]{24})/", (req, res, next) => {
     passport_1.default.authenticate("jwt", { session: false }, (err, user) => __awaiter(void 0, void 0, void 0, function* () {
         var _a, _b;
-        const community = yield communityModel_1.default.findById(req.params.id, { creator: 1 });
+        const community = yield communityModel_1.default.findById(req.params.id, {
+            creator: 1,
+        });
         const isUserCreator = (community === null || community === void 0 ? void 0 : community.creator.toString()) === ((_a = user._id) === null || _a === void 0 ? void 0 : _a.toString());
-        const isUserAdmin = user.permission === 'admin';
+        const isUserAdmin = user.permission === "admin";
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
             // if user is not admin, return error
             return res.status(403).send({

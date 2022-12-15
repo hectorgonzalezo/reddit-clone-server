@@ -1,13 +1,17 @@
-import Comment from '../models/commentModel';
-import Post from '../models/postModel';
-import { body, validationResult } from 'express-validator';
-import { Request, Response, NextFunction } from 'express';
-import { ExtendedRequest } from 'src/types/extendedRequest';
-import { IComment, IPost } from 'src/types/models';
-import { QueryOptions } from 'mongoose';
+import Comment from "../models/commentModel";
+import Post from "../models/postModel";
+import { body, validationResult } from "express-validator";
+import { Request, Response, NextFunction } from "express";
+import { ExtendedRequest } from "src/types/extendedRequest";
+import { IComment, IPost } from "src/types/models";
+import { QueryOptions } from "mongoose";
 
 // List all comments in database
-exports.comments_list = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
+exports.comments_list = async (
+  req: ExtendedRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     // Look for post and extract comments
     const { comments } = (await Post.findById(req.postId, {
@@ -25,11 +29,17 @@ exports.comments_list = async (req: ExtendedRequest, res: Response, next: NextFu
 
 // Display details about an individual comment
 // GET comment
-exports.comment_detail = async (req: Request, res: Response, next: NextFunction) => {
+exports.comment_detail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const comment = await Comment.findById(req.params.id); 
+    const comment = await Comment.findById(req.params.id);
     if (comment === null) {
-      return res.status(404).send({ error: `No comment with id ${req.params.id} found` });
+      return res
+        .status(404)
+        .send({ error: `No comment with id ${req.params.id} found` });
     }
     return res.status(200).send({ comment });
   } catch (error) {
@@ -87,7 +97,7 @@ exports.comment_create = [
         // add comment to previous comment
         await Comment.findByIdAndUpdate(req.body.parent, {
           $push: { responses: savedComment._id },
-        }); 
+        });
       }
 
       return res.send({ comment: savedComment });
@@ -158,6 +168,21 @@ exports.comment_update = [
 
 // Display details about an individual comment
 // DELETE comment
-exports.comment_delete = (req: Request, res: Response) => {
-  res.send({ comment: `Comment ${req.params.id} deleted` });
+exports.comment_delete = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const comment = await Comment.findByIdAndDelete(req.params.id);
+    // if comment doesn't exist, send error
+    if (comment === null) {
+      return res
+        .status(404)
+        .send({ error: `No comment with id ${req.params.id} found` });
+    }
+    return res.send({ msg: `Comment ${req.params.id} deleted` });
+  } catch (err) {
+    return next(err);
+  }
 };

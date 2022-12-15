@@ -1,10 +1,9 @@
-import express, { Request, Response, NextFunction } from 'express';
-import passport from 'passport';
-import Comment from '../models/commentModel';
-const commentsController = require('../controllers/commentController');
+import express, { Request, Response, NextFunction } from "express";
+import passport from "passport";
+import Comment from "../models/commentModel";
+const commentsController = require("../controllers/commentController");
 const router = express.Router();
-import { IUser } from 'src/types/models';
-
+import { IUser } from "src/types/models";
 
 // GET all comments
 router.get("/", commentsController.comments_list);
@@ -68,6 +67,32 @@ router.put(
 );
 
 // DELETE a single comment
-router.delete("/:id([a-zA-Z0-9]{24})", commentsController.comment_delete);
+router.delete(
+  "/:id([a-zA-Z0-9]{24})",
+  (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate(
+      "jwt",
+      { session: false },
+      async (err: any, user: IUser) => {
+        const comment = await Comment.findById(req.params.id, { user: 1 });
+        const isUserCreator = comment?.user.toString() === user._id?.toString();
+        const isUserAdmin = user.permission === "admin";
+        if (err || !user || (!isUserCreator && !isUserAdmin)) {
+          // if user is not admin, return error
+          return res.status(403).send({
+            errors: [
+              {
+                msg: "Only the comment creator can delete it",
+              },
+            ],
+          });
+        }
+        req.body.userId = user._id?.toString();
+        return next();
+      }
+    )(req, res, next);
+  },
+  commentsController.comment_delete
+);
 
 module.exports = router;

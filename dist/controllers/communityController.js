@@ -51,7 +51,8 @@ exports.community_create = [
         .custom((value) => {
         return /^[a-zA-Z0-9_]+$/.test(value);
     })
-        .withMessage("Only letters, numbers and underscore allowed in community name").custom((value) => __awaiter(void 0, void 0, void 0, function* () {
+        .withMessage("Only letters, numbers and underscore allowed in community name")
+        .custom((value) => __awaiter(void 0, void 0, void 0, function* () {
         // Look for community in database
         const existingCommunity = yield communityModel_1.default.find({ name: value });
         // If it exists, show error
@@ -70,11 +71,7 @@ exports.community_create = [
         .isLength({ min: 3, max: 300 })
         .escape()
         .withMessage("Community description must be between 3 and 300 characters long"),
-    (0, express_validator_1.body)("icon")
-        .optional()
-        .trim()
-        .isURL()
-        .withMessage("Icon has to be a URl"),
+    (0, express_validator_1.body)("icon").optional().trim().isURL().withMessage("Icon has to be a URl"),
     (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const errors = (0, express_validator_1.validationResult)(req);
         // if validation didn't succeed
@@ -97,7 +94,7 @@ exports.community_create = [
                 communityObj.icon = req.body.icon;
             }
             const newCommunity = new communityModel_1.default(communityObj);
-            // Save it to database  
+            // Save it to database
             const savedCommunity = yield newCommunity.save();
             return res.send({ community: savedCommunity });
         }
@@ -117,7 +114,8 @@ exports.community_update = [
         .custom((value) => {
         return /^[a-zA-Z0-9_]+$/.test(value);
     })
-        .withMessage("Only letters, numbers and underscore allowed in community name").custom((value) => __awaiter(void 0, void 0, void 0, function* () {
+        .withMessage("Only letters, numbers and underscore allowed in community name")
+        .custom((value) => __awaiter(void 0, void 0, void 0, function* () {
         // Look for community in database
         const existingCommunity = yield communityModel_1.default.find({ name: value });
         // If it exists, show error
@@ -136,11 +134,7 @@ exports.community_update = [
         .isLength({ min: 3, max: 300 })
         .escape()
         .withMessage("Community description must be between 3 and 300 characters long"),
-    (0, express_validator_1.body)("icon")
-        .optional()
-        .trim()
-        .isURL()
-        .withMessage("Icon has to be a URl"),
+    (0, express_validator_1.body)("icon").optional().trim().isURL().withMessage("Icon has to be a URl"),
     (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const errors = (0, express_validator_1.validationResult)(req);
         // if validation didn't succeed
@@ -176,7 +170,7 @@ exports.community_update = [
                 communityObj.icon = req.body.icon;
             }
             const newCommunity = new communityModel_1.default(communityObj);
-            // option to return updated community 
+            // option to return updated community
             const updateOptions = {
                 new: true,
                 upsert: true,

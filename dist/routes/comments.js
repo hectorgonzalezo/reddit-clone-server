@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const passport_1 = __importDefault(require("passport"));
 const commentModel_1 = __importDefault(require("../models/commentModel"));
-const commentsController = require('../controllers/commentController');
+const commentsController = require("../controllers/commentController");
 const router = express_1.default.Router();
 // GET all comments
 router.get("/", commentsController.comments_list);
@@ -61,6 +61,25 @@ router.put("/:id([a-zA-Z0-9]{24})", (req, res, next) => {
     }))(req, res, next);
 }, commentsController.comment_update);
 // DELETE a single comment
-router.delete("/:id([a-zA-Z0-9]{24})", commentsController.comment_delete);
+router.delete("/:id([a-zA-Z0-9]{24})", (req, res, next) => {
+    passport_1.default.authenticate("jwt", { session: false }, (err, user) => __awaiter(void 0, void 0, void 0, function* () {
+        var _a, _b;
+        const comment = yield commentModel_1.default.findById(req.params.id, { user: 1 });
+        const isUserCreator = (comment === null || comment === void 0 ? void 0 : comment.user.toString()) === ((_a = user._id) === null || _a === void 0 ? void 0 : _a.toString());
+        const isUserAdmin = user.permission === "admin";
+        if (err || !user || (!isUserCreator && !isUserAdmin)) {
+            // if user is not admin, return error
+            return res.status(403).send({
+                errors: [
+                    {
+                        msg: "Only the comment creator can delete it",
+                    },
+                ],
+            });
+        }
+        req.body.userId = (_b = user._id) === null || _b === void 0 ? void 0 : _b.toString();
+        return next();
+    }))(req, res, next);
+}, commentsController.comment_delete);
 module.exports = router;
 //# sourceMappingURL=comments.js.map

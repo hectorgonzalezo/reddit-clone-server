@@ -39,7 +39,7 @@ passport.use(new JWTStrategy({
     jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
     secretOrKey: process.env.AUTH_SECRET,
 }, (jwtPayload, cb) => {
-    // find the user in db 
+    // find the user in db
     return userModel_1.default.findById(jwtPayload._id, (err, user) => {
         if (err) {
             return cb(err);

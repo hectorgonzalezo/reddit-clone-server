@@ -1,16 +1,19 @@
-import mongoose, { ConnectOptions } from 'mongoose';
+import mongoose, { ConnectOptions } from "mongoose";
 
 // Get .env
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
-mongoose.set('strictQuery', false);
+mongoose.set("strictQuery", false);
 
-mongoose.connect(process.env.MONGODB_URI as string, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-} as ConnectOptions);
+mongoose.connect(
+  process.env.MONGODB_URI as string,
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  } as ConnectOptions
+);
 
 // Get the default connection
 const db = mongoose.connection;

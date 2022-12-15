@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const passport_1 = __importDefault(require("passport"));
 const postModel_1 = __importDefault(require("../models/postModel"));
-const postsController = require('../controllers/postController');
+const postsController = require("../controllers/postController");
 const router = express_1.default.Router();
 // GET all posts
 router.get("/", postsController.posts_list);

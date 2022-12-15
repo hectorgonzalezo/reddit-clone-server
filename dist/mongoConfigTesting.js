@@ -18,9 +18,9 @@ function initializeMongoServer() {
     return __awaiter(this, void 0, void 0, function* () {
         const mongoServer = yield MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
-        mongoose_1.default.set('strictQuery', false);
+        mongoose_1.default.set("strictQuery", false);
         mongoose_1.default.connect(mongoUri);
-        mongoose_1.default.connection.on("error", e => {
+        mongoose_1.default.connection.on("error", (e) => {
             if (e.message.code === "ETIMEDOUT") {
                 console.log(e);
                 mongoose_1.default.connect(mongoUri);

@@ -9,8 +9,11 @@ const CommentSchema = new Schema({
     text: { type: String, minLength: 1, required: true },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     upVotes: { type: Number, required: false, default: 0 },
-    responses: [{ type: Schema.Types.ObjectId, ref: "Comment", autopopulate: true }],
+    responses: [
+        { type: Schema.Types.ObjectId, ref: "Comment", autopopulate: true },
+    ],
 });
-CommentSchema.plugin(require('mongoose-autopopulate'));
+// autopopulate nested responses
+CommentSchema.plugin(require("mongoose-autopopulate"));
 exports.default = mongoose_1.default.model("Comment", CommentSchema);
 //# sourceMappingURL=commentModel.js.map

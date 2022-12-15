@@ -1,9 +1,9 @@
-import express, { Request, Response, NextFunction } from 'express';
-import passport from 'passport';
-import Community from '../models/communityModel';
-const communitiesController = require('../controllers/communityController');
+import express, { Request, Response, NextFunction } from "express";
+import passport from "passport";
+import Community from "../models/communityModel";
+const communitiesController = require("../controllers/communityController");
 const router = express.Router();
-import { IUser } from 'src/types/models';
+import { IUser } from "src/types/models";
 
 // GET all communities
 router.get("/", communitiesController.communities_list);
@@ -31,7 +31,7 @@ router.post(
         }
         req.body.userId = user._id?.toString();
         return next();
-      },
+      }
     )(req, res, next);
   },
   communitiesController.community_create
@@ -45,9 +45,12 @@ router.put(
       "jwt",
       { session: false },
       async (err: any, user: IUser) => {
-        const community = await Community.findById(req.params.id, { creator: 1});
-        const isUserCreator = community?.creator.toString() === user._id?.toString();
-        const isUserAdmin = user.permission === 'admin';
+        const community = await Community.findById(req.params.id, {
+          creator: 1,
+        });
+        const isUserCreator =
+          community?.creator.toString() === user._id?.toString();
+        const isUserAdmin = user.permission === "admin";
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
           // if user is not admin, return error
           return res.status(403).send({
@@ -75,10 +78,12 @@ router.delete(
       "jwt",
       { session: false },
       async (err: any, user: IUser) => {
-        const community = await Community.findById(req.params.id, { creator: 1 });
+        const community = await Community.findById(req.params.id, {
+          creator: 1,
+        });
         const isUserCreator =
           community?.creator.toString() === user._id?.toString();
-        const isUserAdmin = user.permission === 'admin';
+        const isUserAdmin = user.permission === "admin";
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
           // if user is not admin, return error
           return res.status(403).send({

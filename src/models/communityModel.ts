@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-import { ICommunity } from '../types/models';
+import mongoose from "mongoose";
+import { ICommunity } from "../types/models";
 
 const Schema = mongoose.Schema;
 
@@ -10,10 +10,11 @@ const CommunitySchema = new Schema({
     maxLength: 21,
     validate: {
       // Community name can only contain letters, numbers and "_"
-      validator:  (value: string) =>{
+      validator: (value: string) => {
         return /^[a-zA-Z0-9_]+$/.test(value);
       },
-      message: (props: { value: string }) => "Only letters, numbers and underscore allowed in community name",
+      message: (props: { value: string }) =>
+        "Only letters, numbers and underscore allowed in community name",
     },
     required: true,
   },
@@ -25,14 +26,12 @@ const CommunitySchema = new Schema({
   icon: { type: String, required: false },
 });
 
-CommunitySchema.virtual('membersQuantity').get(function () {
+CommunitySchema.virtual("membersQuantity").get(function () {
   return this.users.length;
 });
 
-CommunitySchema.virtual('postsQuantity').get(function () {
+CommunitySchema.virtual("postsQuantity").get(function () {
   return this.posts.length;
 });
-
-
 
 export default mongoose.model<ICommunity>("Community", CommunitySchema);

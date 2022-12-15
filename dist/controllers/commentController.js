@@ -38,7 +38,9 @@ exports.comment_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, f
     try {
         const comment = yield commentModel_1.default.findById(req.params.id);
         if (comment === null) {
-            return res.status(404).send({ error: `No comment with id ${req.params.id} found` });
+            return res
+                .status(404)
+                .send({ error: `No comment with id ${req.params.id} found` });
         }
         return res.status(200).send({ comment });
     }
@@ -157,7 +159,19 @@ exports.comment_update = [
 ];
 // Display details about an individual comment
 // DELETE comment
-exports.comment_delete = (req, res) => {
-    res.send({ comment: `Comment ${req.params.id} deleted` });
-};
+exports.comment_delete = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const comment = yield commentModel_1.default.findByIdAndDelete(req.params.id);
+        // if comment doesn't exist, send error
+        if (comment === null) {
+            return res
+                .status(404)
+                .send({ error: `No comment with id ${req.params.id} found` });
+        }
+        return res.send({ msg: `Comment ${req.params.id} deleted` });
+    }
+    catch (err) {
+        return next(err);
+    }
+});
 //# sourceMappingURL=commentController.js.map

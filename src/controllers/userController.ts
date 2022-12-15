@@ -1,17 +1,21 @@
-import { NextFunction, Request, Response } from 'express';
-import { QueryOptions } from 'mongoose';
-import passport from 'passport';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { NextFunction, Request, Response } from "express";
+import { QueryOptions } from "mongoose";
+import passport from "passport";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { body, validationResult } from "express-validator";
-import User from '../models/userModel';
-import { IUser } from 'src/types/models';
+import User from "../models/userModel";
+import { IUser } from "src/types/models";
 
 const TOKEN_EXPIRATION = "24h";
 
 // Display details about an individual user
 // GET user
-exports.user_detail = async (req: Request, res: Response, next: NextFunction) => {
+exports.user_detail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const user = await User.findById(req.params.id, { username: 1 });
     // return queried user as json
@@ -45,7 +49,7 @@ exports.user_log_in = [
       (err: Error, user: IUser) => {
         if (err || !user) {
           return res.status(400).json({
-            errors:[{ msg: "Incorrect username or password" }],
+            errors: [{ msg: "Incorrect username or password" }],
             user,
           });
         }

@@ -1,8 +1,8 @@
-import express, { Request, Response, NextFunction } from 'express';
-import passport from 'passport';
-const usersController = require('../controllers/userController');
+import express, { Request, Response, NextFunction } from "express";
+import passport from "passport";
+const usersController = require("../controllers/userController");
 const router = express.Router();
-import { IUser } from 'src/types/models';
+import { IUser } from "src/types/models";
 require("../passport");
 
 // GET a single user

@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-import { IPost } from '../types/models';
+import mongoose from "mongoose";
+import { IPost } from "../types/models";
 
 const Schema = mongoose.Schema;
 
