@@ -25,7 +25,7 @@ const CommunitySchema = new Schema({
     users: [{ type: Schema.Types.ObjectId, ref: "User" }],
     posts: [{ type: Schema.Types.ObjectId, ref: "Post" }],
     icon: { type: String, required: false },
-});
+}, { timestamps: true });
 CommunitySchema.virtual("membersQuantity").get(function () {
     return this.users.length;
 });

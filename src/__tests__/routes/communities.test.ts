@@ -126,6 +126,8 @@ describe("GET communities", () => {
     expect(res.body.community._id).toBe(mockCommunityId);
     expect(res.body.community.users).toEqual(mockCommunity.users);
     expect(res.body.community.posts).toEqual(mockCommunity.posts);
+    // It has timestamp
+    expect(res.body.community.createdAt).not.toBe(undefined);
     // community has no icon
     expect(res.body.community.icon).toBe(undefined);
   });

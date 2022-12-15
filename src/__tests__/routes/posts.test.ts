@@ -121,6 +121,8 @@ describe("GET posts", () => {
     expect(res.body.post.text).toBe(mockPost.text);
     expect(res.body.post.user.toString()).toBe(userId);
     expect(res.body.post.community.toString()).toEqual(mockCommunityId);
+    // It has timestamp
+    expect(res.body.post.createdAt).not.toBe(undefined);
   });
 
   test("Looking for a non existing post returns an error", async () => {

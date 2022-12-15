@@ -12,6 +12,6 @@ const PostSchema = new Schema({
     community: { type: Schema.Types.ObjectId, ref: "Community", required: true },
     upVotes: { type: Number, required: false, default: 0 },
     comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
-});
+}, { timestamps: true });
 exports.default = mongoose_1.default.model("Post", PostSchema);
 //# sourceMappingURL=postModel.js.map

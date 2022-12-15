@@ -22,7 +22,7 @@ const TOKEN_EXPIRATION = "24h";
 // GET user
 exports.user_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const user = yield userModel_1.default.findById(req.params.id, { username: 1, icon: 1 });
+        const user = yield userModel_1.default.findById(req.params.id, { username: 1, icon: 1, createdAt: 1 });
         // return queried user as json
         return res.json({ user });
     }

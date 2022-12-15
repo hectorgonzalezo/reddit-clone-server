@@ -17,7 +17,7 @@ exports.user_detail = async (
   next: NextFunction
 ) => {
   try {
-    const user = await User.findById(req.params.id, { username: 1, icon: 1 });
+    const user = await User.findById(req.params.id, { username: 1, icon: 1, createdAt: 1 });
     // return queried user as json
     return res.json({ user });
   } catch (err) {

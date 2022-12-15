@@ -100,6 +100,8 @@ describe("User GET", () => {
     expect(/.+\/json/.test(res.type)).toBe(true);
     expect(res.body.user._id).toBe(userId);
     expect(res.body.user.username).toBe("mock");
+    // User should have timestamp
+    expect(res.body.user.createdAt).not.toBe(undefined);
     // user doesn't have icon
     expect(res.body.user.icon).toBe(undefined);
   });

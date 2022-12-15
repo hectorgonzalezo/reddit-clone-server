@@ -8,6 +8,8 @@ export interface IUser extends Document {
   icon?: string;
   communities: [] | ObjectId[] | ICommunity[];
   _id?: string | ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface IPost extends Document {
@@ -17,6 +19,8 @@ export interface IPost extends Document {
   community: ObjectId | ICommunity;
   upVotes: number;
   comments: [] | ObjectId[] | IComment[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface IComment extends Document {
@@ -24,6 +28,8 @@ export interface IComment extends Document {
   user: ObjectId | IUser;
   upVotes: number;
   responses: [] | ObjectId[] | IComment[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ICommunity extends Document {
@@ -36,4 +42,6 @@ export interface ICommunity extends Document {
   membersQuantity?: number;
   postsQuantity?: number;
   icon?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

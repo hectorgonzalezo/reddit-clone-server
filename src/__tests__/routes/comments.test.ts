@@ -176,6 +176,8 @@ describe("GET comments", () => {
     expect(res.body.comment.text).toBe(mockComment.text);
     expect(res.body.comment.user).toBe(userId);
     expect(res.body.comment.upVotes).toBe(mockComment.upVotes);
+    // It has timestamp
+    expect(res.body.comment.createdAt).not.toBe(undefined);
   });
 
   test("Get nested comment (response) ", async () => {
