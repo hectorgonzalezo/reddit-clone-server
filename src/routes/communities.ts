@@ -45,7 +45,7 @@ router.put(
       "jwt",
       { session: false },
       async (err: any, user: IUser) => {
-        const community = await Community.findById(req.params.id);
+        const community = await Community.findById(req.params.id, { creator: 1});
         const isUserCreator = community?.creator.toString() === user._id?.toString();
         const isUserAdmin = user.permission === 'admin';
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
@@ -75,7 +75,7 @@ router.delete(
       "jwt",
       { session: false },
       async (err: any, user: IUser) => {
-        const community = await Community.findById(req.params.id);
+        const community = await Community.findById(req.params.id, { creator: 1 });
         const isUserCreator =
           community?.creator.toString() === user._id?.toString();
         const isUserAdmin = user.permission === 'admin';

@@ -5,9 +5,13 @@ import { NextFunction, Request, Response } from 'express';
 import { ICommunity } from 'src/types/models';
 
 // List all communities in database
-exports.communities_list = async (req: Request, res: Response, next: NextFunction) => {
+exports.communities_list = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const communities = await Community.find(); 
+    const communities = await Community.find();
     return res.status(200).send({ communities });
   } catch (error) {
     return next(error);
@@ -16,11 +20,17 @@ exports.communities_list = async (req: Request, res: Response, next: NextFunctio
 
 // Display details about an individual community
 // GET community
-exports.community_detail = async (req: Request, res: Response, next: NextFunction) => {
+exports.community_detail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const community = await Community.findById(req.params.id); 
+    const community = await Community.findById(req.params.id);
     if (community === null) {
-      return res.status(404).send({ error: `No community with id ${req.params.id} found` });
+      return res
+        .status(404)
+        .send({ error: `No community with id ${req.params.id} found` });
     }
     return res.status(200).send({ community });
   } catch (error) {
@@ -43,7 +53,7 @@ exports.community_create = [
       "Only letters, numbers and underscore allowed in community name"
     ).custom(async (value) => {
       // Look for community in database
-      const existingCommunity = await Community.find({ name: value});
+      const existingCommunity = await Community.find({ name: value });
       // If it exists, show error
       if (existingCommunity.length !== 0) {
         return Promise.reject();
@@ -115,7 +125,7 @@ exports.community_update = [
       "Only letters, numbers and underscore allowed in community name"
     ).custom(async (value) => {
       // Look for community in database
-      const existingCommunity = await Community.find({ name: value});
+      const existingCommunity = await Community.find({ name: value });
       // If it exists, show error
       if (existingCommunity.length !== 0) {
         return Promise.reject();
@@ -149,11 +159,16 @@ exports.community_update = [
 
       let previousCommunity: ICommunity;
       // Get posts and users from previous entry
-      previousCommunity = await Community.findById(req.params.id) as ICommunity;
+      previousCommunity = (await Community.findById(req.params.id, {
+        users: 1,
+        posts: 1,
+      })) as ICommunity;
 
       if (previousCommunity === null) {
         // If no community is found, send error;
-        return res.status(404).send({ error: `No community with id ${req.params.id} found` });
+        return res
+          .status(404)
+          .send({ error: `No community with id ${req.params.id} found` });
       }
       
       // If no community with that name exists, create one
@@ -196,12 +211,18 @@ exports.community_update = [
 
 // Display details about an individual community
 // DELETE community
-exports.community_delete = async (req: Request, res: Response, next: NextFunction) => {
+exports.community_delete = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const community = await Community.findByIdAndDelete(req.params.id);
-    // if coummunity doesnt exist, send error
+    // if coummunity doesn't exist, send error
     if (community === null) {
-      return res.status(404).send({ error: `No community with id ${req.params.id} found` }); 
+      return res
+        .status(404)
+        .send({ error: `No community with id ${req.params.id} found` });
     }
     return res.send({ msg: `Community ${req.params.id} deleted` });
   } catch (err) {

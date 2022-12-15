@@ -288,6 +288,7 @@ describe("POST/create comments", () => {
     await Community.findByIdAndDelete(mockCommunityId);
     await Post.findByIdAndDelete(mockPostId);
     await Comment.findByIdAndDelete(mockCommentId);
+    await Comment.findByIdAndDelete(mockComment2Id);
   });
 
   test("Allowed for logged in regular user", async () => {
@@ -331,7 +332,6 @@ describe("POST/create comments", () => {
       errors: [{ msg: "Only logged in users can add comments" }],
     });
   });
-
 
   test("Not allowed with no text", async () => {
 
@@ -433,4 +433,246 @@ const commentAfter = await Comment.findById(mockCommentId);
 expect(res.status).toEqual(400);
 expect(res.body.errors[0].msg).toEqual("Parent comment doesn't exist");
 });
+});
+
+
+
+// Update comments
+describe("PUT/update comments", () => {
+  // Add communities, user and comments to mock database
+  beforeAll(async () => {
+    const hashedPassword = await bcrypt.hash("hashedPassword", 10);
+    const regularUser = new User({
+      username: "mocka",
+      email: "mocka@mocka.com",
+      password: hashedPassword,
+      permission: "regular",
+    });
+
+    const user = await regularUser.save();
+
+    const adminUser = new User({
+      username: "mockas",
+      email: "mockas@mockas.com",
+      password: hashedPassword,
+      permission: "admin",
+    });
+
+    const adminUserData = await adminUser.save();
+
+    const logIn = await request(app)
+    .post("/users/log-in")
+    .set("Content-Type", "application/json")
+    .send({
+      username: "mocka",
+      password: "hashedPassword",
+    });
+
+  token = logIn.body.token;
+  userId = logIn.body.user._id.toString();
+
+  const logIn2 = await request(app)
+    .post("/users/log-in")
+    .set("Content-Type", "application/json")
+    .send({
+      username: "mockas",
+      password: "hashedPassword",
+    });
+
+  token = logIn.body.token;
+  userId = logIn.body.user._id.toString();
+
+  adminToken = logIn2.body.token;
+  adminUserId = logIn2.body.user._id.toString();
+
+    mockCommunity = new Community({
+      name: "mockCommunity",
+      subtitle: "Fake community",
+      description: "This is a fake community created for testing purposes",
+      creator: userId,
+      users: [],
+      posts: [],
+    });
+    const community = await mockCommunity.save(); 
+    mockCommunityId = community._id.toString();
+
+
+    mockComment = new Comment({
+      text: "Mock comment",
+      user: userId,
+      upVotes: 1
+    });
+
+    mockComment2 = new Comment({
+      text: "Mock comment2",
+      user: adminUserId,
+      upVotes: 13,
+      responses: [mockCommentId]
+    });
+
+    const [comment1, comment2] = await Promise.all([mockComment.save(), mockComment2.save()]);
+
+
+    mockCommentId = comment1._id.toString();
+    mockComment2Id = comment2._id.toString();
+
+    mockPost = new Post({
+      title: "Mock post",
+      text: "This is a mock post made for testing purposes",
+      user: userId,
+      community: mockCommunityId,
+      comments: [mockComment2Id]
+    });
+
+    const post = await mockPost.save();
+
+    mockPostId = post._id.toString();
+  });
+
+  // remove communities and user from database
+  afterAll(async () => {
+    await User.findByIdAndDelete(userId);
+    await Community.findByIdAndDelete(mockCommunityId);
+    await Post.findByIdAndDelete(mockPostId);
+    await Comment.findByIdAndDelete(mockCommentId);
+    await Comment.findByIdAndDelete(mockComment2Id);
+  });
+
+  test("Allowed for logged in regular user which is the comment creator", async () => {
+
+    const res = await request(app)
+      .put(`/posts/${mockPostId}/comments/${mockCommentId}/`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        text: "This is an updated comment",
+      });
+
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // Return the correct comment info
+    expect(res.body.comment.text).toBe("This is an updated comment");
+    expect(res.body.comment.upVotes).toBe(mockComment.upVotes);
+    expect(res.body.comment.responses).toEqual(mockComment.responses);
+    // assign current user to be the comment creator
+    expect(res.body.comment.user.toString()).toBe(userId);
+  });
+
+  test("Not allowed if user isn't logged in", async () => {
+
+    const res = await request(app)
+    .put(`/posts/${mockPostId}/comments/${mockCommentId}/`)
+    .set("Content-Type", "application/json")
+    // No authorization
+    .send({
+      text: "This is an updated post",
+    });
+
+    // return unauthorized status and json
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only the comment creator can update it" }],
+    });
+  });
+
+  test("Not allowed if user isn't the comment creator", async () => {
+    const res = await request(app)
+      .put(`/posts/${mockPostId}/comments/${mockComment2Id}/`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        text: "This is an updated post",
+      });
+
+    // return ok status and json
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only the comment creator can update it" }],
+    });
+  });
+
+  test("Updating keeps the same upvotes, and responses", async () => {
+    const res = await request(app)
+      .put(`/posts/${mockPostId}/comments/${mockComment2Id}/`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        text: "This is an updated post",
+      });
+
+    expect(res.body.comment.upVotes).toBe(mockComment2.upVotes);
+    expect(res.body.comment.responses).toEqual(mockComment2.responses);
+  });
+
+  test("Not allowed with no text", async () => {
+
+    const res = await request(app)
+      .put(`/posts/${mockPostId}/comments/${mockCommentId}/`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({});
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("Comment text can't be empty");
+  });
+
+  test("Parents can't be changed", async () => {
+    // Get previous number of responses in comment
+    const commentPreviously = await Comment.findById(mockComment2Id) as IComment;
+
+    const res = await request(app)
+    .put(`/posts/${mockPostId}/comments/${mockCommentId}/`)
+    .set("Content-Type", "application/json")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      text: "New fake comment",
+      parent: mockComment2Id
+    });
+
+  // get comment after adding response
+  const commentAfter = await Comment.findById(mockComment2Id) as IComment;
+
+  expect(res.status).toEqual(200);
+  expect(/.+\/json/.test(res.type)).toBe(true);
+  // Parent responses shouldn't change
+  expect(commentAfter.responses.length).toBe(
+    commentPreviously.responses.length
+  );
+});
+
+  test("Updating a non existing post returns an error", async () => {
+    const res = await request(app)
+      .put(`/posts/${mockPostId}/comments/123456789a123456789b1234`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        text: "New fake comment",
+      });
+
+    expect(res.status).toEqual(404);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // returns error if user is not authorized
+    expect(res.body.error).toEqual(
+      "No comment with id 123456789a123456789b1234 found"
+    );
+  });
+
+  test("Updating a  with a string that doesn't match an id doesn't return anything", async () => {
+    const res = await request(app)
+      .put(`/posts/${mockPostId}/comments/12345`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        text: "New fake comment",
+      });
+
+    expect(res.status).toEqual(404);
+  });
+  
 });

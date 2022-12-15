@@ -30,7 +30,9 @@ exports.community_detail = (req, res, next) => __awaiter(void 0, void 0, void 0,
     try {
         const community = yield communityModel_1.default.findById(req.params.id);
         if (community === null) {
-            return res.status(404).send({ error: `No community with id ${req.params.id} found` });
+            return res
+                .status(404)
+                .send({ error: `No community with id ${req.params.id} found` });
         }
         return res.status(200).send({ community });
     }
@@ -149,10 +151,15 @@ exports.community_update = [
         try {
             let previousCommunity;
             // Get posts and users from previous entry
-            previousCommunity = (yield communityModel_1.default.findById(req.params.id));
+            previousCommunity = (yield communityModel_1.default.findById(req.params.id, {
+                users: 1,
+                posts: 1,
+            }));
             if (previousCommunity === null) {
                 // If no community is found, send error;
-                return res.status(404).send({ error: `No community with id ${req.params.id} found` });
+                return res
+                    .status(404)
+                    .send({ error: `No community with id ${req.params.id} found` });
             }
             // If no community with that name exists, create one
             const communityObj = {
@@ -190,9 +197,11 @@ exports.community_update = [
 exports.community_delete = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const community = yield communityModel_1.default.findByIdAndDelete(req.params.id);
-        // if coummunity doesnt exist, send error
+        // if coummunity doesn't exist, send error
         if (community === null) {
-            return res.status(404).send({ error: `No community with id ${req.params.id} found` });
+            return res
+                .status(404)
+                .send({ error: `No community with id ${req.params.id} found` });
         }
         return res.send({ msg: `Community ${req.params.id} deleted` });
     }

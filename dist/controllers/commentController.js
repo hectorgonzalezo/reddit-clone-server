@@ -106,9 +106,55 @@ exports.comment_create = [
 ];
 // Update an individual comment
 // PUT comment
-exports.comment_update = (req, res) => {
-    res.send({ comment: `Comment ${req.params.id} updated` });
-};
+exports.comment_update = [
+    (0, express_validator_1.body)("text", "Comment text is required")
+        .trim()
+        .isLength({ min: 1 })
+        .escape()
+        .withMessage("Comment text can't be empty"),
+    (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+        const errors = (0, express_validator_1.validationResult)(req);
+        // if validation didn't succeed
+        if (!errors.isEmpty()) {
+            // Return errors
+            return res.status(400).send({ errors: errors.array() });
+        }
+        try {
+            let previousComment;
+            // Get upVotes and responses from previous entry
+            previousComment = (yield commentModel_1.default.findById(req.params.id, {
+                upVotes: 1,
+                responses: 1,
+            }));
+            if (previousComment === null) {
+                // If no community is found, send error;
+                return res
+                    .status(404)
+                    .send({ error: `No comment with id ${req.params.id} found` });
+            }
+            // Create a new comment
+            const newComment = new commentModel_1.default({
+                text: req.body.text,
+                user: req.body.userId,
+                upVotes: previousComment.upVotes,
+                responses: previousComment.responses,
+                _id: req.params.id,
+            });
+            // option to return updated comment
+            const updateOptions = {
+                new: true,
+                upsert: true,
+                rawResult: true,
+            };
+            // Update comment in database
+            const updatedComment = yield commentModel_1.default.findByIdAndUpdate(req.params.id, newComment, updateOptions);
+            return res.send({ comment: updatedComment.value });
+        }
+        catch (err) {
+            return next(err);
+        }
+    }),
+];
 // Display details about an individual comment
 // DELETE comment
 exports.comment_delete = (req, res) => {

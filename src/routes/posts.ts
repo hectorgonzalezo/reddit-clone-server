@@ -45,7 +45,7 @@ router.put(
       "jwt",
       { session: false },
       async (err: any, user: IUser) => {
-        const post = await Post.findById(req.params.id);
+        const post = await Post.findById(req.params.id, { user: 1});
         const isUserCreator =
           post?.user.toString() === user._id?.toString();
         const isUserAdmin = user.permission === "admin";
@@ -75,7 +75,7 @@ router.delete(
       "jwt",
       { session: false },
       async (err: any, user: IUser) => {
-        const post = await Post.findById(req.params.id);
+        const post = await Post.findById(req.params.id, { user: 1});
         const isUserCreator = post?.user.toString() === user._id?.toString();
         const isUserAdmin = user.permission === "admin";
         if (err || !user || (!isUserCreator && !isUserAdmin)) {

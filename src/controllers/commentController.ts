@@ -3,7 +3,8 @@ import Post from '../models/postModel';
 import { body, validationResult } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 import { ExtendedRequest } from 'src/types/extendedRequest';
-import { IPost } from 'src/types/models';
+import { IComment, IPost } from 'src/types/models';
+import { QueryOptions } from 'mongoose';
 
 // List all comments in database
 exports.comments_list = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
@@ -98,9 +99,62 @@ exports.comment_create = [
 
 // Update an individual comment
 // PUT comment
-exports.comment_update = (req: Request, res: Response) => {
-  res.send({ comment: `Comment ${req.params.id} updated` });
-};
+exports.comment_update = [
+  body("text", "Comment text is required")
+    .trim()
+    .isLength({ min: 1 })
+    .escape()
+    .withMessage("Comment text can't be empty"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    // if validation didn't succeed
+    if (!errors.isEmpty()) {
+      // Return errors
+      return res.status(400).send({ errors: errors.array() });
+    }
+    try {
+      let previousComment: IComment;
+      // Get upVotes and responses from previous entry
+      previousComment = (await Comment.findById(req.params.id, {
+        upVotes: 1,
+        responses: 1,
+      })) as IComment;
+
+      if (previousComment === null) {
+        // If no community is found, send error;
+        return res
+          .status(404)
+          .send({ error: `No comment with id ${req.params.id} found` });
+      }
+
+      // Create a new comment
+      const newComment = new Comment({
+        text: req.body.text,
+        user: req.body.userId,
+        upVotes: previousComment.upVotes,
+        responses: previousComment.responses,
+        _id: req.params.id,
+      });
+
+      // option to return updated comment
+      const updateOptions: QueryOptions & { rawResult: true } = {
+        new: true,
+        upsert: true,
+        rawResult: true,
+      };
+
+      // Update comment in database
+      const updatedComment = await Comment.findByIdAndUpdate(
+        req.params.id,
+        newComment,
+        updateOptions
+      );
+      return res.send({ comment: updatedComment.value });
+    } catch (err) {
+      return next(err);
+    }
+  },
+];
 
 // Display details about an individual comment
 // DELETE comment

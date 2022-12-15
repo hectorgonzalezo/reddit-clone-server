@@ -43,7 +43,7 @@ router.post("/", (req, res, next) => {
 router.put("/:id([a-zA-Z0-9]{24})/", (req, res, next) => {
     passport_1.default.authenticate("jwt", { session: false }, (err, user) => __awaiter(void 0, void 0, void 0, function* () {
         var _a, _b;
-        const community = yield communityModel_1.default.findById(req.params.id);
+        const community = yield communityModel_1.default.findById(req.params.id, { creator: 1 });
         const isUserCreator = (community === null || community === void 0 ? void 0 : community.creator.toString()) === ((_a = user._id) === null || _a === void 0 ? void 0 : _a.toString());
         const isUserAdmin = user.permission === 'admin';
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
@@ -65,7 +65,7 @@ router.put("/:id([a-zA-Z0-9]{24})/", (req, res, next) => {
 router.delete("/:id([a-zA-Z0-9]{24})/", (req, res, next) => {
     passport_1.default.authenticate("jwt", { session: false }, (err, user) => __awaiter(void 0, void 0, void 0, function* () {
         var _a, _b;
-        const community = yield communityModel_1.default.findById(req.params.id);
+        const community = yield communityModel_1.default.findById(req.params.id, { creator: 1 });
         const isUserCreator = (community === null || community === void 0 ? void 0 : community.creator.toString()) === ((_a = user._id) === null || _a === void 0 ? void 0 : _a.toString());
         const isUserAdmin = user.permission === 'admin';
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
