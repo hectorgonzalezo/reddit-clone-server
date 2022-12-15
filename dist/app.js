@@ -32,7 +32,7 @@ if (process.env.NODE_ENV !== "development") {
     app.use(enforceSSL());
     app.use(helmet.hsts({
         maxAge: ms("1 year"),
-        includeSubdomains: true,
+        includeSubDomains: true,
     }));
 }
 app.use(logger("dev"));
