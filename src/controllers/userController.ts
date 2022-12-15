@@ -17,11 +17,11 @@ exports.user_detail = async (
   next: NextFunction
 ) => {
   try {
-    const user = await User.findById(req.params.id, { username: 1 });
+    const user = await User.findById(req.params.id, { username: 1, icon: 1 });
     // return queried user as json
-    res.json({ user });
+    return res.json({ user });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
@@ -55,7 +55,7 @@ exports.user_log_in = [
         }
         req.login(user, { session: false }, (loginErr: any) => {
           if (loginErr) {
-            res.send(loginErr);
+            return next(loginErr);
           }
           // generate a signed son web token with the contents of user object and return it in the response
           // user must be converted to JSON
@@ -172,6 +172,11 @@ exports.user_update = [
     .withMessage("Password must be at least 6 characters long")
     .custom((value, { req }) => value === req.body.password)
     .withMessage("Passwords don't match"),
+  body("icon")
+    .optional()
+    .trim()
+    .isURL()
+    .withMessage("Icon can only be a URL"),
   async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     // if validation didn't succeed
@@ -182,14 +187,24 @@ exports.user_update = [
 
     // If its valid
     try {
+      // look for previous email and username in user
+      const previousUser = await User.findById(req.params.id, {
+        username: 1,
+        email: 1,
+        icon: 1,
+      }) as IUser;
+
       // encrypt password
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
       // look in db for a user with the same username
       const existingUser = await User.find({ username: req.body.username });
 
-      // if one exists, send error
-      if (existingUser.length !== 0) {
+      // if one exists and its not the user itself, send error
+      if (
+        existingUser.length !== 0 &&
+        req.body.username !== previousUser?.username
+      ) {
         // return error and user data filled so far
         return res.status(400).send({
           errors: [{ msg: "Username already exists", user: req.body }],
@@ -199,22 +214,35 @@ exports.user_update = [
       // look in db for a user with the same email
       const existingEmail = await User.find({ email: req.body.email });
 
-      // if one exists, send error
-      if (existingEmail.length !== 0) {
+      // if one exists and its not the user itself, send error
+      if (
+        existingEmail.length !== 0 &&
+        req.body.email !== previousUser?.email
+      ) {
         // return error and user data filled so far
         return res.status(400).send({
           errors: [{ msg: "Email already exists", user: req.body }],
         });
       }
 
-      // if no user exists with provided username, create one
-      const newUser = new User({
+      const userObj = {
         username: req.body.username,
         email: req.body.email,
         password: hashedPassword,
         permission: "regular",
         _id: req.params.id,
-      });
+      } as IUser;
+
+      // If an icon is provided, add it to obj
+      if (req.body.icon !== undefined) {
+        userObj.icon = req.body.icon;
+      } else if (previousUser.icon !== undefined) {
+      // If an icon existed in previous user, add it to obj
+        userObj.icon = previousUser.icon;
+      }
+
+      // if no user exists with provided username, create one
+      const newUser = new User(userObj);
 
       // option to return updated user
       const updateOption: QueryOptions & { rawResult: true } = {
