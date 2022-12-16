@@ -12,7 +12,7 @@ const CommentSchema = new Schema({
     responses: [
         { type: Schema.Types.ObjectId, ref: "Comment", autopopulate: true },
     ],
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true } });
 // autopopulate nested responses
 CommentSchema.plugin(require("mongoose-autopopulate"));
 exports.default = mongoose_1.default.model("Comment", CommentSchema);

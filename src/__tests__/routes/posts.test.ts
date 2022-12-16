@@ -120,6 +120,8 @@ describe("GET posts", () => {
     expect(res.body.post.title).toBe(mockPost.title);
     expect(res.body.post.text).toBe(mockPost.text);
     expect(res.body.post.user.toString()).toBe(userId);
+    // virtual property
+    expect(res.body.post.commentsNum).toBe(0);
     expect(res.body.post.community.toString()).toEqual(mockCommunityId);
     // It has timestamp
     expect(res.body.post.createdAt).not.toBe(undefined);

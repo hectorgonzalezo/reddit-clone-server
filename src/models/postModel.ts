@@ -10,6 +10,10 @@ const PostSchema = new Schema({
   community: { type: Schema.Types.ObjectId, ref: "Community", required: true },
   upVotes: { type: Number, required: false, default: 0 },
   comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true } });
+
+PostSchema.virtual("commentsNum").get(function () {
+  return this.comments.length;
+});
 
 export default mongoose.model<IPost>("Post", PostSchema);

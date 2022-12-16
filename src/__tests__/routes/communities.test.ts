@@ -128,6 +128,9 @@ describe("GET communities", () => {
     expect(res.body.community.posts).toEqual(mockCommunity.posts);
     // It has timestamp
     expect(res.body.community.createdAt).not.toBe(undefined);
+    // It has virtual properties
+    expect(res.body.community.membersQuantity).toBe(0);
+    expect(res.body.community.postsQuantity).toBe(0);
     // community has no icon
     expect(res.body.community.icon).toBe(undefined);
   });
@@ -704,8 +707,8 @@ describe("PUT/update communities", () => {
     // assign current user to be the community creator
     expect(res.body.community.creator.toString()).toBe(userId);
     // Keeps the same number of posts and users
-    expect(res.body.community.users.length).toBe(1);
-    expect(res.body.community.posts.length).toBe(1);
+    expect(res.body.community.membersQuantity).toBe(1);
+    expect(res.body.community.postsQuantity).toBe(1);
   });
 
   test("Adding an icon updates the icon in original community", async () => {
