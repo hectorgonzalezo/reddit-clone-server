@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const communityModel_1 = __importDefault(require("../models/communityModel"));
+const userModel_1 = __importDefault(require("../models/userModel"));
 const express_validator_1 = require("express-validator");
 // List all communities in database
 exports.communities_list = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
@@ -28,7 +29,7 @@ exports.communities_list = (req, res, next) => __awaiter(void 0, void 0, void 0,
 // GET community
 exports.community_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const community = yield communityModel_1.default.findById(req.params.id);
+        const community = yield communityModel_1.default.findById(req.params.id).populate("users");
         if (community === null) {
             return res
                 .status(404)
@@ -204,6 +205,82 @@ exports.community_delete = (req, res, next) => __awaiter(void 0, void 0, void 0,
                 .send({ error: `No community with id ${req.params.id} found` });
         }
         return res.send({ msg: `Community ${req.params.id} deleted` });
+    }
+    catch (err) {
+        return next(err);
+    }
+});
+// Subscribe to community
+exports.community_subscribe = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { communityId, userId } = req.params;
+        const prevCommunity = yield communityModel_1.default.findById(communityId, { _id: 1 });
+        // if community doesn't exist, send error
+        if (prevCommunity === null) {
+            return res
+                .status(404)
+                .send({ error: `No community with id ${communityId} found` });
+        }
+        // option to return updated community
+        const updateOptions = {
+            new: true,
+            upsert: true,
+            rawResult: true,
+        };
+        // Add user to community
+        const community = yield communityModel_1.default.findByIdAndUpdate(communityId, { $addToSet: { users: userId } }, updateOptions);
+        // add community to user
+        const user = yield userModel_1.default.findByIdAndUpdate(userId, { $addToSet: { communities: communityId } }, updateOptions);
+        // if user doesn't exist, send error
+        if (user === null) {
+            return res.status(404).send({ error: `No user with id ${userId} found` });
+        }
+        return res.send({
+            message: `User ${userId} subscribed to community ${communityId}`,
+            community: community.value,
+            user: user.value,
+        });
+    }
+    catch (err) {
+        return next(err);
+    }
+});
+// Unsubscribe from community
+exports.community_unSubscribe = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { communityId, userId } = req.params;
+        // option to return updated community
+        const updateOptions = {
+            new: true,
+            upsert: true,
+            rawResult: true,
+        };
+        const prevCommunity = yield communityModel_1.default.findById(communityId, { _id: 1 });
+        // if community doesn't exist, send error
+        if (prevCommunity === null) {
+            return res
+                .status(404)
+                .send({ error: `No community with id ${communityId} found` });
+        }
+        // Add user to community
+        const community = yield communityModel_1.default.findByIdAndUpdate(communityId, { $pull: { users: userId } }, updateOptions);
+        // if community doesn't exist, send error
+        if (community === null) {
+            return res
+                .status(404)
+                .send({ error: `No community with id ${communityId} found` });
+        }
+        // add community to user
+        const user = yield userModel_1.default.findByIdAndUpdate(userId, { $pull: { communities: communityId } }, updateOptions);
+        // if community doesn't exist, send error
+        if (user === null) {
+            return res.status(404).send({ error: `No user with id ${userId} found` });
+        }
+        return res.send({
+            message: `User ${userId} unsubscribed from community ${communityId}`,
+            community: community.value,
+            user: user.value,
+        });
     }
     catch (err) {
         return next(err);

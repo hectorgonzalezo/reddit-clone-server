@@ -4,6 +4,7 @@ const users = require("../../routes/users");
 import bcrypt from "bcryptjs";
 const initializeMongoServer = require("../../mongoConfigTesting");
 import User from "../../models/userModel";
+import Community from '../../models/communityModel';
 
 const app = express();
 
@@ -13,6 +14,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use("/", users);
 
+let fakeCommunity;
+let fakeCommunityId: string;
 let adminUserId: string;
 let regularUserId: string;
 let userWithIconId: string;
@@ -20,6 +23,8 @@ let userWithIconId: string;
 // Add user to mock database
 beforeAll(async () => {
   const hashedPassword = await bcrypt.hash("hashedPassword", 10);
+
+
 
   const adminUser = new User({
     username: "mock",
@@ -42,6 +47,7 @@ beforeAll(async () => {
     icon: "http://fakeurl.com/icon",
     permission: "regular",
   });
+
   const users = await Promise.all([
     adminUser.save(),
     regularUser.save(),
@@ -50,6 +56,18 @@ beforeAll(async () => {
   adminUserId = users[0]._id.toString();
   regularUserId = users[1]._id.toString();
   userWithIconId = users[2]._id.toString();
+
+  fakeCommunity = new Community({
+    name: "mockCommunity",
+    subtitle: "Fake community",
+    description: "This is a fake community created for testing purposes",
+    creator: regularUserId,
+    users: [adminUserId],
+    posts: [],
+  });
+
+  const community = await fakeCommunity.save();
+  fakeCommunityId = community._id.toString();
 });
 
 afterAll(async () => {
@@ -102,6 +120,8 @@ describe("User GET", () => {
     expect(res.body.user.username).toBe("mock");
     // User should have timestamp
     expect(res.body.user.createdAt).not.toBe(undefined);
+    // communities should be empty
+    expect(res.body.user.communities).toEqual([]);
     // user doesn't have icon
     expect(res.body.user.icon).toBe(undefined);
   });

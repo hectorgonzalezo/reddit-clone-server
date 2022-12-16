@@ -17,7 +17,12 @@ exports.user_detail = async (
   next: NextFunction
 ) => {
   try {
-    const user = await User.findById(req.params.id, { username: 1, icon: 1, createdAt: 1 });
+    const user = await User.findById(req.params.id, {
+      username: 1,
+      icon: 1,
+      createdAt: 1,
+      communities: 1,
+    }).populate("communities");
     // return queried user as json
     return res.json({ user });
   } catch (err) {
@@ -132,6 +137,7 @@ exports.user_sign_up = [
         email: req.body.email,
         password: hashedPassword,
         permission: "regular",
+        communities: [],
       } as IUser);
       // and save it to database
       await newUser.save();

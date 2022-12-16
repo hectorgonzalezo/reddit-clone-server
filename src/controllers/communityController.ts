@@ -1,4 +1,5 @@
 import Community from "../models/communityModel";
+import User from "../models/userModel";
 import { body, validationResult } from "express-validator";
 import { QueryOptions } from "mongoose";
 import { NextFunction, Request, Response } from "express";
@@ -26,7 +27,7 @@ exports.community_detail = async (
   next: NextFunction
 ) => {
   try {
-    const community = await Community.findById(req.params.id);
+    const community = await Community.findById(req.params.id).populate("users");
     if (community === null) {
       return res
         .status(404)
@@ -242,6 +243,120 @@ exports.community_delete = async (
         .send({ error: `No community with id ${req.params.id} found` });
     }
     return res.send({ msg: `Community ${req.params.id} deleted` });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+
+// Subscribe to community
+exports.community_subscribe = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    
+    const { communityId, userId } = req.params;
+
+    const prevCommunity = await Community.findById(communityId, { _id: 1 });
+    // if community doesn't exist, send error
+    if (prevCommunity === null) {
+      return res
+        .status(404)
+        .send({ error: `No community with id ${communityId} found` });
+
+    }
+
+    // option to return updated community
+    const updateOptions: QueryOptions & { rawResult: true } = {
+      new: true,
+      upsert: true,
+      rawResult: true,
+    };
+    // Add user to community
+    const community = await Community.findByIdAndUpdate(
+      communityId,
+      { $addToSet: { users: userId } },
+      updateOptions
+    );
+
+    // add community to user
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { communities: communityId } },
+      updateOptions
+    );  
+
+    // if user doesn't exist, send error
+    if (user === null) {
+      return res.status(404).send({ error: `No user with id ${userId} found` });
+    }
+
+    return res.send({
+      message: `User ${userId} subscribed to community ${communityId}`,
+      community: community.value,
+      user: user.value,
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+// Unsubscribe from community
+exports.community_unSubscribe = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { communityId, userId } = req.params;
+    // option to return updated community
+    const updateOptions: QueryOptions & { rawResult: true } = {
+      new: true,
+      upsert: true,
+      rawResult: true,
+    };
+
+    const prevCommunity = await Community.findById(communityId, { _id: 1 });
+    // if community doesn't exist, send error
+    if (prevCommunity === null) {
+      return res
+        .status(404)
+        .send({ error: `No community with id ${communityId} found` });
+    }
+
+    // Add user to community
+    const community = await Community.findByIdAndUpdate(
+      communityId,
+      { $pull: { users: userId } },
+      updateOptions
+    );
+ 
+    // if community doesn't exist, send error
+    if (community === null) {
+      return res
+        .status(404)
+        .send({ error: `No community with id ${communityId} found` });
+
+    }
+
+    // add community to user
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $pull: { communities: communityId } },
+      updateOptions
+    );  
+
+    // if community doesn't exist, send error
+    if (user === null) {
+      return res.status(404).send({ error: `No user with id ${userId} found` });
+    }
+    return res.send({
+      message: `User ${userId} unsubscribed from community ${communityId}`,
+      community: community.value,
+      user: user.value,
+    });
   } catch (err) {
     return next(err);
   }

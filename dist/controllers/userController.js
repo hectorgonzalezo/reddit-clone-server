@@ -22,7 +22,12 @@ const TOKEN_EXPIRATION = "24h";
 // GET user
 exports.user_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const user = yield userModel_1.default.findById(req.params.id, { username: 1, icon: 1, createdAt: 1 });
+        const user = yield userModel_1.default.findById(req.params.id, {
+            username: 1,
+            icon: 1,
+            createdAt: 1,
+            communities: 1,
+        }).populate("communities");
         // return queried user as json
         return res.json({ user });
     }
@@ -123,6 +128,7 @@ exports.user_sign_up = [
                 email: req.body.email,
                 password: hashedPassword,
                 permission: "regular",
+                communities: [],
             });
             // and save it to database
             yield newUser.save();

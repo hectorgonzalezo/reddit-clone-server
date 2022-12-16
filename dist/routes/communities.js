@@ -21,6 +21,44 @@ const router = express_1.default.Router();
 router.get("/", communitiesController.communities_list);
 // GET a single community
 router.get("/:id([a-zA-Z0-9]{24})/", communitiesController.community_detail);
+// Subscribe to community
+router.put("/:communityId([a-zA-Z0-9]{24})/subscription/:userId([a-zA-Z0-9]{24})", (req, res, next) => {
+    passport_1.default.authenticate("jwt", { session: false }, (err, user) => __awaiter(void 0, void 0, void 0, function* () {
+        var _a, _b;
+        if (err || !user || ((_a = user._id) === null || _a === void 0 ? void 0 : _a.toString()) !== req.params.userId) {
+            // if user is not admin, return error
+            return res.status(403).send({
+                errors: [
+                    {
+                        msg: "Only the user itself can subscribe",
+                    },
+                ],
+            });
+        }
+        // if the users isn't the creator of community, send error
+        req.body.userId = (_b = user._id) === null || _b === void 0 ? void 0 : _b.toString();
+        return next();
+    }))(req, res, next);
+}, communitiesController.community_subscribe);
+// Unsubscribe from community
+router.delete("/:communityId([a-zA-Z0-9]{24})/subscription/:userId([a-zA-Z0-9]{24})", (req, res, next) => {
+    passport_1.default.authenticate("jwt", { session: false }, (err, user) => __awaiter(void 0, void 0, void 0, function* () {
+        var _a, _b;
+        if (err || !user || ((_a = user._id) === null || _a === void 0 ? void 0 : _a.toString()) !== req.params.userId) {
+            // if user is not admin, return error
+            return res.status(403).send({
+                errors: [
+                    {
+                        msg: "Only the user itself can unsubscribe",
+                    },
+                ],
+            });
+        }
+        // if the users isn't the creator of community, send error
+        req.body.userId = (_b = user._id) === null || _b === void 0 ? void 0 : _b.toString();
+        return next();
+    }))(req, res, next);
+}, communitiesController.community_unSubscribe);
 // POST/create a single community
 router.post("/", (req, res, next) => {
     passport_1.default.authenticate("jwt", { session: false }, (err, user) => {

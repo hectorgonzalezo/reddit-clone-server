@@ -34,4 +34,5 @@ const UserSchema = new Schema({
   communities: [{ type: Schema.Types.ObjectId, ref: "Community" }],
 }, { timestamps: true, toJSON: { virtuals: true } });
 
+
 export default mongoose.model<IUser>("User", UserSchema);
