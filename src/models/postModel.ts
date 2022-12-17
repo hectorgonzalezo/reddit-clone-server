@@ -12,6 +12,7 @@ const PostSchema = new Schema({
   upVotes: { type: Number, required: false, default: 0 },
   comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
   url:  { type: String, required: false },
+  imageUrl: { type: String, required: false },
 }, { timestamps: true, toJSON: { virtuals: true } });
 
 PostSchema.virtual("commentsNum").get(function () {

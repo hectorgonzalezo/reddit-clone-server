@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { body, validationResult } from "express-validator";
 import User from "../models/userModel";
+import Post from '../models/postModel';
 import { IUser } from "src/types/models";
 
 const TOKEN_EXPIRATION = "24h";
@@ -22,6 +23,7 @@ exports.user_detail = async (
       icon: 1,
       createdAt: 1,
       communities: 1,
+      votes: 1,
     }).populate("communities");
     // return queried user as json
     return res.json({ user });
@@ -138,9 +140,10 @@ exports.user_sign_up = [
         password: hashedPassword,
         permission: "regular",
         communities: [],
+        votes: {},
       } as IUser);
       // and save it to database
-      await newUser.save();
+      const user = await newUser.save();
 
       // generate a signed son web token with the contents of user object and return it in the response
       // user must be converted to JSON
@@ -149,7 +152,7 @@ exports.user_sign_up = [
         process.env.AUTH_SECRET as string,
         { expiresIn: TOKEN_EXPIRATION }
       );
-      return res.json({ user: newUser, token });
+      return res.json({ user, token });
     } catch (err) {
       return next(err);
     }
@@ -277,3 +280,60 @@ exports.user_delete = (req: Request, res: Response, next: NextFunction) => {
     res.json({ response: `deleted user ${req.params.id}` });
   });
 };
+
+
+// Voting mechanism
+exports.user_vote = [
+  body("vote")
+    .custom((value, { req }) => {
+      if (
+        value === undefined ||
+        (value !== "upVote" && value !== "downVote")
+      ) {
+        throw new Error("Invalid vote format");
+      }
+      // Indicates the success of this synchronous custom validator
+      return true;
+    })
+    .withMessage("Invalid vote format"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    // if validation didn't succeed
+    if (!errors.isEmpty()) {
+      // Return errors
+      return res.status(400).send({ errors: errors.array() });
+    }
+    // If its valid
+    try {
+      const { userId, postId } = req.params;
+      // if post doesn't exist, throw error
+      const post = await Post.findById(postId, { text: 1 });
+      if (post === null) {
+        return res.status(400).send({
+          errors: [{ msg: "Post doesn't exist" }],
+        }); 
+      }
+
+      // option to return updated user
+      const updateOption: QueryOptions & { rawResult: true } = {
+        new: true,
+        upsert: true,
+        rawResult: true,
+      };
+
+      // location inside user document where vote will go
+      const votePath = `votes.${postId}`;
+
+      // update user in database
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $set: { [votePath]: req.body.vote } },
+        updateOption,
+      );
+
+      return res.json({ user: updatedUser.value });
+    } catch (err) {
+      return next(err);
+    }
+  },
+];

@@ -1,5 +1,11 @@
 import { Document, ObjectId } from "mongodb";
 
+export type Vote = "upVote" | "downVote" | "";
+
+interface Votes {
+  [index: string]: Vote;
+}
+
 export interface IUser extends Document {
   username: string;
   password: string;
@@ -10,6 +16,7 @@ export interface IUser extends Document {
   _id?: string | ObjectId;
   createdAt?: string;
   updatedAt?: string;
+  votes: Votes;
 }
 
 export interface IPost extends Document {

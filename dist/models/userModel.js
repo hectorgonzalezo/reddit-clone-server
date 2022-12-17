@@ -33,6 +33,12 @@ const UserSchema = new Schema({
     },
     icon: { type: String, required: false },
     communities: [{ type: Schema.Types.ObjectId, ref: "Community" }],
+    votes: {
+        type: Map,
+        of: String,
+        enum: ["upVote", "downVote", ""],
+        default: {},
+    },
 }, { timestamps: true, toJSON: { virtuals: true } });
 exports.default = mongoose_1.default.model("User", UserSchema);
 //# sourceMappingURL=userModel.js.map

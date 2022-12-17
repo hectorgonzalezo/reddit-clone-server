@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 const initializeMongoServer = require("../../mongoConfigTesting");
 import User from "../../models/userModel";
 import Community from '../../models/communityModel';
+import Post from '../../models/postModel';
+import { ICommunity, IPost } from "../../types/models";
 
 const app = express();
 
@@ -14,17 +16,22 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use("/", users);
 
-let fakeCommunity;
+let fakeCommunity: ICommunity;
 let fakeCommunityId: string;
 let adminUserId: string;
 let regularUserId: string;
 let userWithIconId: string;
+let mockPost: IPost;
+let mockPostId: string;
+let mockPost2: IPost;
+let mockPost2Id: string;
 
-// Add user to mock database
+
+
+describe("User GET", () => {
+  // Add user to mock database
 beforeAll(async () => {
   const hashedPassword = await bcrypt.hash("hashedPassword", 10);
-
-
 
   const adminUser = new User({
     username: "mock",
@@ -68,15 +75,34 @@ beforeAll(async () => {
 
   const community = await fakeCommunity.save();
   fakeCommunityId = community._id.toString();
+
+  mockPost = new Post({
+    title: "Mock post",
+    text: "This is a mock post made for testing purposes",
+    user: regularUserId,
+    community: fakeCommunityId,
+  });
+
+  mockPost2 = new Post({
+    title: "Another mock post",
+    text: "This is a mock post made for testing purposes",
+    user: regularUserId,
+    community: fakeCommunityId,
+  });
+
+  const [post, post2] = await Promise.all([mockPost.save(), mockPost2.save()]);
+
+  mockPostId = post._id.toString();
+  mockPost2Id = post2._id.toString();
 });
 
 afterAll(async () => {
   await User.findByIdAndDelete(adminUserId);
   await User.findByIdAndDelete(regularUserId);
   await User.findByIdAndDelete(userWithIconId);
+  await Post.findByIdAndDelete(mockPostId);
+  await Post.findByIdAndDelete(mockPost2Id);
 })
-
-describe("User GET", () => {
   test("Get info about a user impossible without authorization", async () => {
     const res = await request(app).get("/123456789a123456789b1234");
 
@@ -118,6 +144,8 @@ describe("User GET", () => {
     expect(/.+\/json/.test(res.type)).toBe(true);
     expect(res.body.user._id).toBe(userId);
     expect(res.body.user.username).toBe("mock");
+    // votes should be empty
+    expect(res.body.user.votes).toEqual({});
     // User should have timestamp
     expect(res.body.user.createdAt).not.toBe(undefined);
     // communities should be empty
@@ -154,23 +182,79 @@ describe("User GET", () => {
 });
 
 describe("User update", () => {
-  test("Update a user not allowed without admin permission", async () => {
-    const res = await request(app)
-      .put(`/${regularUserId}`)
-      .set("Content-Type", "application/json")
-      .send({
-        username: "updated",
-        email: "updated@mock.com",
-        password: "123456",
-        passwordConfirm: "123456",
-      });
-
-    expect(res.status).toEqual(403);
-    expect(/.+\/json/.test(res.type)).toBe(true);
-    expect(res.body).toEqual({
-      errors: [{ msg: "Only administrators can update users" }],
+  beforeEach(async () => {
+    const hashedPassword = await bcrypt.hash("hashedPassword", 10);
+  
+    const adminUser = new User({
+      username: "mock",
+      email: "mock@mock.com",
+      password: hashedPassword,
+      permission: "admin",
     });
+  
+    const regularUser = new User({
+      username: "mocka",
+      email: "mocka@mocka.com",
+      password: hashedPassword,
+      permission: "regular",
+    });
+  
+    const userWithIcon = new User({
+      username: "mockWithIcon",
+      email: "mockIcon@mocka.com",
+      password: hashedPassword,
+      icon: "http://fakeurl.com/icon",
+      permission: "regular",
+    });
+  
+    const users = await Promise.all([
+      adminUser.save(),
+      regularUser.save(),
+      userWithIcon.save(),
+    ]);
+    adminUserId = users[0]._id.toString();
+    regularUserId = users[1]._id.toString();
+    userWithIconId = users[2]._id.toString();
+  
+    fakeCommunity = new Community({
+      name: "mockCommunity",
+      subtitle: "Fake community",
+      description: "This is a fake community created for testing purposes",
+      creator: regularUserId,
+      users: [adminUserId],
+      posts: [],
+    });
+  
+    const community = await fakeCommunity.save();
+    fakeCommunityId = community._id.toString();
+  
+    mockPost = new Post({
+      title: "Mock post",
+      text: "This is a mock post made for testing purposes",
+      user: regularUserId,
+      community: fakeCommunityId,
+    });
+  
+    mockPost2 = new Post({
+      title: "Another mock post",
+      text: "This is a mock post made for testing purposes",
+      user: regularUserId,
+      community: fakeCommunityId,
+    });
+  
+    const [post, post2] = await Promise.all([mockPost.save(), mockPost2.save()]);
+  
+    mockPostId = post._id.toString();
+    mockPost2Id = post2._id.toString();
   });
+  
+  afterEach(async () => {
+    await User.findByIdAndDelete(adminUserId);
+    await User.findByIdAndDelete(regularUserId);
+    await User.findByIdAndDelete(userWithIconId);
+    await Post.findByIdAndDelete(mockPostId);
+    await Post.findByIdAndDelete(mockPost2Id);
+  })
 
   test("Update a user allowed with admin permission", async () => {
     // log in and get token
@@ -185,7 +269,7 @@ describe("User update", () => {
     const { token } = logIn.body;
 
     const res = await request(app)
-      .put(`/${regularUserId}`)
+      .put(`/${adminUserId}`)
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
       .send({
@@ -203,6 +287,7 @@ describe("User update", () => {
     expect(res.body.user.username).toBe("updated");
     expect(res.body.user.email).toBe("updated@mock.com");
     expect(res.body.user.permission).toBe("regular");
+    expect(res.body.user.votes).toEqual({});
     expect(res.body.user.communities).toEqual([]);
     expect(res.body.user.icon).toBe(undefined);
 
@@ -210,13 +295,98 @@ describe("User update", () => {
     expect(res.body).not.toHaveProperty("token");
   });
 
+  test("Update a user allowed if logged in", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        username: "updated1",
+        email: "updated1@mock.com",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
+
+    // return ok status code
+    expect(res.status).toEqual(200);
+
+    // return user and token
+    expect(res.body).toHaveProperty("user");
+    expect(res.body.user.username).toBe("updated1");
+    expect(res.body.user.email).toBe("updated1@mock.com");
+    expect(res.body.user.permission).toBe("regular");
+    expect(res.body.user.votes).toEqual({});
+    expect(res.body.user.communities).toEqual([]);
+    expect(res.body.user.icon).toBe(undefined);
+
+  });
+
+  test("Update a user not allowed without permission", async () => {
+    const res = await request(app)
+      .put(`/${regularUserId}`)
+      .set("Content-Type", "application/json")
+      .send({
+        username: "updated2",
+        email: "updated2@mock.com",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
+
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only the user itself can update it" }],
+    });
+  });
+
+  test("Update a user not allowed if trying to update another user", async () => {
+        // log in and get token
+        const logIn = await request(app)
+        .post("/log-in")
+        .set("Content-Type", "application/json")
+        .send({
+          username: "mocka",
+          password: "hashedPassword",
+        });
+  
+      const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${adminUserId}`)
+      .set("Content-Type", "application/json")
+      .send({
+        username: "updated",
+        email: "updated@mock.com",
+        password: "123456",
+        passwordConfirm: "123456",
+      });
+
+    expect(res.status).toEqual(403);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    expect(res.body).toEqual({
+      errors: [{ msg: "Only the user itself can update it" }],
+    });
+  });
+ 
+
   test("Update icon possible", async () => {
     // log in and get token
     const logIn = await request(app)
       .post("/log-in")
       .set("Content-Type", "application/json")
       .send({
-        username: "mock",
+        username: "mocka",
         password: "hashedPassword",
       });
 
@@ -247,46 +417,21 @@ describe("User update", () => {
 
     // As user it not signed it, no token should be returned
     expect(res.body).not.toHaveProperty("token");
-  });
-  
-  test("Update another field keeps icon", async () => {
-    // log in and get token
-    const logIn = await request(app)
-      .post("/log-in")
-      .set("Content-Type", "application/json")
-      .send({
-        username: "mock",
-        password: "hashedPassword",
-      });
 
-    const { token } = logIn.body;
-
-    const res = await request(app)
+    // updating another field keeps icon
+    const res2 = await request(app)
       .put(`/${regularUserId}`)
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
       .send({
         username: "updated2",
-        email: "updated@mock.com",
+        email: "updated2@mock.com",
         password: "123456",
         passwordConfirm: "123456",
       });
 
-    // return ok status code
-    expect(res.status).toEqual(200);
-
-    // return user and token
-    expect(res.body).toHaveProperty("user");
-    expect(res.body.user.username).toBe("updated2");
-    expect(res.body.user.email).toBe("updated@mock.com");
-    expect(res.body.user.permission).toBe("regular");
-    expect(res.body.user.communities).toEqual([]);
-    expect(res.body.user.icon).toBe("http://fakeIcon.com/icon");
-
-    // As user it not signed it, no token should be returned
-    expect(res.body).not.toHaveProperty("token");
+    expect(res2.body.user.icon).toBe("http://fakeIcon.com/icon");
   });
-  
 
   test("Not allowed if icon isn't a url", async () => {
     // log in and get token
@@ -294,7 +439,7 @@ describe("User update", () => {
       .post("/log-in")
       .set("Content-Type", "application/json")
       .send({
-        username: "mock",
+        username: "mocka",
         password: "hashedPassword",
       });
 
@@ -305,8 +450,8 @@ describe("User update", () => {
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
       .send({
-        username: "updated",
-        email: "updated@mock.com",
+        username: "updated7",
+        email: "updated7@mock.com",
         password: "123456",
         passwordConfirm: "123456",
         icon: "1234"
@@ -329,7 +474,7 @@ describe("User update", () => {
       .post("/log-in")
       .set("Content-Type", "application/json")
       .send({
-        username: "mock",
+        username: "mocka",
         password: "hashedPassword",
       });
 
@@ -361,7 +506,7 @@ describe("User update", () => {
       .post("/log-in")
       .set("Content-Type", "application/json")
       .send({
-        username: "mock",
+        username: "mocka",
         password: "hashedPassword",
       });
 
@@ -392,7 +537,7 @@ describe("User update", () => {
       .post("/log-in")
       .set("Content-Type", "application/json")
       .send({
-        username: "mock",
+        username: "mocka",
         password: "hashedPassword",
       });
 
@@ -422,7 +567,7 @@ describe("User update", () => {
       .post("/log-in")
       .set("Content-Type", "application/json")
       .send({
-        username: "mock",
+        username: "mocka",
         password: "hashedPassword",
       });
 
@@ -453,7 +598,7 @@ describe("User update", () => {
       .post("/log-in")
       .set("Content-Type", "application/json")
       .send({
-        username: "mock",
+        username: "mocka",
         password: "hashedPassword",
       });
 
@@ -486,7 +631,7 @@ describe("User update", () => {
       .set("Content-Type", "application/json")
 
       .send({
-        username: "mock",
+        username: "mocka",
         password: "hashedPassword",
       });
 
@@ -519,7 +664,7 @@ describe("User update", () => {
       .post("/log-in")
       .set("Content-Type", "application/json")
       .send({
-        username: "mock",
+        username: "mocka",
         password: "hashedPassword",
       });
 
@@ -552,7 +697,7 @@ describe("User update", () => {
       .set("Content-Type", "application/json")
 
       .send({
-        username: "mock",
+        username: "mocka",
         password: "hashedPassword",
       });
 
@@ -580,6 +725,80 @@ describe("User update", () => {
 
 
 describe("User DELETE", () => {
+  beforeAll(async () => {
+    const hashedPassword = await bcrypt.hash("hashedPassword", 10);
+  
+    const adminUser = new User({
+      username: "mock",
+      email: "mock@mock.com",
+      password: hashedPassword,
+      permission: "admin",
+    });
+  
+    const regularUser = new User({
+      username: "mocka",
+      email: "mocka@mocka.com",
+      password: hashedPassword,
+      permission: "regular",
+    });
+  
+    const userWithIcon = new User({
+      username: "mockWithIcon",
+      email: "mockIcon@mocka.com",
+      password: hashedPassword,
+      icon: "http://fakeurl.com/icon",
+      permission: "regular",
+    });
+  
+    const users = await Promise.all([
+      adminUser.save(),
+      regularUser.save(),
+      userWithIcon.save(),
+    ]);
+    adminUserId = users[0]._id.toString();
+    regularUserId = users[1]._id.toString();
+    userWithIconId = users[2]._id.toString();
+  
+    fakeCommunity = new Community({
+      name: "mockCommunity",
+      subtitle: "Fake community",
+      description: "This is a fake community created for testing purposes",
+      creator: regularUserId,
+      users: [adminUserId],
+      posts: [],
+    });
+  
+    const community = await fakeCommunity.save();
+    fakeCommunityId = community._id.toString();
+  
+    mockPost = new Post({
+      title: "Mock post",
+      text: "This is a mock post made for testing purposes",
+      user: regularUserId,
+      community: fakeCommunityId,
+    });
+  
+    mockPost2 = new Post({
+      title: "Another mock post",
+      text: "This is a mock post made for testing purposes",
+      user: regularUserId,
+      community: fakeCommunityId,
+    });
+  
+    const [post, post2] = await Promise.all([mockPost.save(), mockPost2.save()]);
+  
+    mockPostId = post._id.toString();
+    mockPost2Id = post2._id.toString();
+  });
+  
+  afterAll(async () => {
+    await User.findByIdAndDelete(adminUserId);
+    await User.findByIdAndDelete(regularUserId);
+    await User.findByIdAndDelete(userWithIconId);
+    await Post.findByIdAndDelete(mockPostId);
+    await Post.findByIdAndDelete(mockPost2Id);
+  })
+
   test("Delete a user not allow without admin permission", async () => {
     const res = await request(app).delete(`/${regularUserId}`);
 
@@ -616,6 +835,79 @@ describe("User DELETE", () => {
 });
 
 describe("User log in", () => {
+  beforeAll(async () => {
+    const hashedPassword = await bcrypt.hash("hashedPassword", 10);
+  
+    const adminUser = new User({
+      username: "mock",
+      email: "mock@mock.com",
+      password: hashedPassword,
+      permission: "admin",
+    });
+  
+    const regularUser = new User({
+      username: "mocka",
+      email: "mocka@mocka.com",
+      password: hashedPassword,
+      permission: "regular",
+    });
+  
+    const userWithIcon = new User({
+      username: "mockWithIcon",
+      email: "mockIcon@mocka.com",
+      password: hashedPassword,
+      icon: "http://fakeurl.com/icon",
+      permission: "regular",
+    });
+  
+    const users = await Promise.all([
+      adminUser.save(),
+      regularUser.save(),
+      userWithIcon.save(),
+    ]);
+    adminUserId = users[0]._id.toString();
+    regularUserId = users[1]._id.toString();
+    userWithIconId = users[2]._id.toString();
+  
+    fakeCommunity = new Community({
+      name: "mockCommunity",
+      subtitle: "Fake community",
+      description: "This is a fake community created for testing purposes",
+      creator: regularUserId,
+      users: [adminUserId],
+      posts: [],
+    });
+  
+    const community = await fakeCommunity.save();
+    fakeCommunityId = community._id.toString();
+  
+    mockPost = new Post({
+      title: "Mock post",
+      text: "This is a mock post made for testing purposes",
+      user: regularUserId,
+      community: fakeCommunityId,
+    });
+  
+    mockPost2 = new Post({
+      title: "Another mock post",
+      text: "This is a mock post made for testing purposes",
+      user: regularUserId,
+      community: fakeCommunityId,
+    });
+  
+    const [post, post2] = await Promise.all([mockPost.save(), mockPost2.save()]);
+  
+    mockPostId = post._id.toString();
+    mockPost2Id = post2._id.toString();
+  });
+  
+  afterAll(async () => {
+    await User.findByIdAndDelete(adminUserId);
+    await User.findByIdAndDelete(regularUserId);
+    await User.findByIdAndDelete(userWithIconId);
+    await Post.findByIdAndDelete(mockPostId);
+    await Post.findByIdAndDelete(mockPost2Id);
+  })
 
   test("Login successfully when writing right credentials", async () => {
     const res = await request(app)
@@ -735,6 +1027,80 @@ describe("User log in", () => {
 });
 
 describe("User sign up", () => {
+  beforeAll(async () => {
+    const hashedPassword = await bcrypt.hash("hashedPassword", 10);
+  
+    const adminUser = new User({
+      username: "mock",
+      email: "mock@mock.com",
+      password: hashedPassword,
+      permission: "admin",
+    });
+  
+    const regularUser = new User({
+      username: "mocka",
+      email: "mocka@mocka.com",
+      password: hashedPassword,
+      permission: "regular",
+    });
+  
+    const userWithIcon = new User({
+      username: "mockWithIcon",
+      email: "mockIcon@mocka.com",
+      password: hashedPassword,
+      icon: "http://fakeurl.com/icon",
+      permission: "regular",
+    });
+  
+    const users = await Promise.all([
+      adminUser.save(),
+      regularUser.save(),
+      userWithIcon.save(),
+    ]);
+    adminUserId = users[0]._id.toString();
+    regularUserId = users[1]._id.toString();
+    userWithIconId = users[2]._id.toString();
+  
+    fakeCommunity = new Community({
+      name: "mockCommunity",
+      subtitle: "Fake community",
+      description: "This is a fake community created for testing purposes",
+      creator: regularUserId,
+      users: [adminUserId],
+      posts: [],
+    });
+  
+    const community = await fakeCommunity.save();
+    fakeCommunityId = community._id.toString();
+  
+    mockPost = new Post({
+      title: "Mock post",
+      text: "This is a mock post made for testing purposes",
+      user: regularUserId,
+      community: fakeCommunityId,
+    });
+  
+    mockPost2 = new Post({
+      title: "Another mock post",
+      text: "This is a mock post made for testing purposes",
+      user: regularUserId,
+      community: fakeCommunityId,
+    });
+  
+    const [post, post2] = await Promise.all([mockPost.save(), mockPost2.save()]);
+  
+    mockPostId = post._id.toString();
+    mockPost2Id = post2._id.toString();
+  });
+  
+  afterAll(async () => {
+    await User.findByIdAndDelete(adminUserId);
+    await User.findByIdAndDelete(regularUserId);
+    await User.findByIdAndDelete(userWithIconId);
+    await Post.findByIdAndDelete(mockPostId);
+    await Post.findByIdAndDelete(mockPost2Id);
+  });
+
   // Correct sign up!
   test("Correctly sign up", async () => {
     const res = await request(app)
@@ -755,6 +1121,7 @@ describe("User sign up", () => {
     expect(res.body.user.username).toBe("juan");
     expect(res.body.user.email).toBe("juan@juan.com");
     expect(res.body.user.permission).toBe("regular");
+    expect(res.body.user.votes).toEqual({});
     expect(res.body.user.communities).toEqual([]);
 
     expect(res.body).toHaveProperty("token");
@@ -915,4 +1282,336 @@ describe("User sign up", () => {
     expect(res.body.errors.length).toBe(5);
   });
 
+});
+
+
+describe("Vote for a particular community", () => {
+  beforeAll(async () => {
+    const hashedPassword = await bcrypt.hash("hashedPassword", 10);
+  
+    const adminUser = new User({
+      username: "mock",
+      email: "mock@mock.com",
+      password: hashedPassword,
+      permission: "admin",
+    });
+  
+    const regularUser = new User({
+      username: "mocka",
+      email: "mocka@mocka.com",
+      password: hashedPassword,
+      permission: "regular",
+    });
+  
+    const userWithIcon = new User({
+      username: "mockWithIcon",
+      email: "mockIcon@mocka.com",
+      password: hashedPassword,
+      icon: "http://fakeurl.com/icon",
+      permission: "regular",
+    });
+  
+    const users = await Promise.all([
+      adminUser.save(),
+      regularUser.save(),
+      userWithIcon.save(),
+    ]);
+    adminUserId = users[0]._id.toString();
+    regularUserId = users[1]._id.toString();
+    userWithIconId = users[2]._id.toString();
+  
+    fakeCommunity = new Community({
+      name: "mockCommunity",
+      subtitle: "Fake community",
+      description: "This is a fake community created for testing purposes",
+      creator: regularUserId,
+      users: [adminUserId],
+      posts: [],
+    });
+  
+    const community = await fakeCommunity.save();
+    fakeCommunityId = community._id.toString();
+  
+    mockPost = new Post({
+      title: "Mock post",
+      text: "This is a mock post made for testing purposes",
+      user: regularUserId,
+      community: fakeCommunityId,
+    });
+  
+    mockPost2 = new Post({
+      title: "Another mock post",
+      text: "This is a mock post made for testing purposes",
+      user: regularUserId,
+      community: fakeCommunityId,
+    });
+  
+    const [post, post2] = await Promise.all([mockPost.save(), mockPost2.save()]);
+  
+    mockPostId = post._id.toString();
+    mockPost2Id = post2._id.toString();
+  });
+  
+  afterAll(async () => {
+    await User.findByIdAndDelete(adminUserId);
+    await User.findByIdAndDelete(regularUserId);
+    await User.findByIdAndDelete(userWithIconId);
+    await Post.findByIdAndDelete(mockPostId);
+    await Post.findByIdAndDelete(mockPost2Id);
+  })
+
+  test("Voting allowed by sending the vote field with id and vote type", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "upVote",
+      });
+
+    // return ok status code
+    expect(res.status).toEqual(200);
+
+    // return user and token
+    expect(res.body).toHaveProperty("user");
+    expect(res.body.user.votes[mockPostId]).toBe("upVote");
+
+    // As user it not signed it, no token should be returned
+    expect(res.body).not.toHaveProperty("token");
+  });
+
+  test("Voting twice for the same post leaves only the last vote", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res1 = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "upVote",
+      });
+
+    const res2 = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "downVote",
+      });
+
+    // return ok status code
+    expect(res2.status).toEqual(200);
+
+    // return user and token
+    expect(res2.body.user.votes[mockPostId]).toBe("downVote");
+  });
+
+  test("Can vote for multiple posts", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res1 = await request(app)
+      .put(`/${regularUserId}/vote/${mockPost2Id}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "upVote"
+      });
+
+    const res2 = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "downVote"
+      });
+
+    // return ok status code
+    expect(res2.status).toEqual(200);
+
+    // console.log(res2.body.user)
+    // return user and token
+    expect(res2.body.user.votes[mockPostId]).toBe("downVote");
+    expect(res2.body.user.votes[mockPost2Id]).toBe("upVote");
+  });
+
+  test("Voting not allowed if user isn't logged in", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .send({
+        vote: "upVote"
+      });
+
+    expect(res.status).toEqual(403);
+
+    expect(res.body.errors[0].msg).toEqual("Only the user itself can vote");
+  });
+
+  test("Voting not allowed if user is another one", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${adminUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "upVote"
+      });
+
+    expect(res.status).toEqual(403);
+
+    expect(res.body.errors[0].msg).toEqual("Only the user itself can vote");
+  });
+
+  test("Throw error if vote type is invalid", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "upVot",
+      });
+
+    expect(res.status).toEqual(400);
+
+    expect(res.body.errors[0].msg).toEqual(
+      "Invalid vote format"
+    );
+  });
+
+
+  test("Throw error if vote is missing vote type", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({});
+
+    expect(res.status).toEqual(400);
+
+    expect(res.body.errors[0].msg).toEqual(
+      "Invalid vote format"
+    );
+  });
+
+  test("Throw error if vote id is invalid", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/1234`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "upVote",
+      });
+
+    // return ok status code
+    expect(res.status).toEqual(404);
+  });
+
+  test("Throw error if post id doesn't exist", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/123456789a123456789b1234`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "upVote",
+      });
+
+    // return ok status code
+    expect(res.status).toEqual(400);
+
+    expect(res.body.errors[0].msg).toEqual("Post doesn't exist");
+  });
 });

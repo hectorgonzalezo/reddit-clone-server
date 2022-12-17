@@ -9,30 +9,40 @@ const validateEmail = function (email: string) {
 
 const Schema = mongoose.Schema;
 
-const UserSchema = new Schema({
-  username: { type: String, unique: true, minLength: 3, required: true },
-  password: { type: String, minLength: 6, required: true },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    validate: [validateEmail, "Please fill a valid email address"],
-    match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      "Please fill a valid email address",
-    ],
-  },
-  permission: {
-    type: String,
-    enum: {
-      values: ["regular", "admin"],
-      message: "{VALUE} is not supported",
+
+const UserSchema = new Schema(
+  {
+    username: { type: String, unique: true, minLength: 3, required: true },
+    password: { type: String, minLength: 6, required: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      validate: [validateEmail, "Please fill a valid email address"],
+      match: [
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        "Please fill a valid email address",
+      ],
     },
-    default: "regular",
+    permission: {
+      type: String,
+      enum: {
+        values: ["regular", "admin"],
+        message: "{VALUE} is not supported",
+      },
+      default: "regular",
+    },
+    icon: { type: String, required: false },
+    communities: [{ type: Schema.Types.ObjectId, ref: "Community" }],
+    votes: {
+      type: Map,
+      of: String,
+      enum: ["upVote", "downVote", ""],
+      default: {},
+    },
   },
-  icon: { type: String, required: false },
-  communities: [{ type: Schema.Types.ObjectId, ref: "Community" }],
-}, { timestamps: true, toJSON: { virtuals: true } });
+  { timestamps: true, toJSON: { virtuals: true } }
+);
 
 
 export default mongoose.model<IUser>("User", UserSchema);

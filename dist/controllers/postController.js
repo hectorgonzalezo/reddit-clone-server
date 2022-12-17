@@ -87,6 +87,7 @@ exports.post_create = [
                 upVotes: 0,
                 comments: [],
             };
+            // add url if there's one
             if (req.body.url !== '') {
                 post.url = req.body.url;
             }

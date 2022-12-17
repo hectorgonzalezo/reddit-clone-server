@@ -17,6 +17,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const express_validator_1 = require("express-validator");
 const userModel_1 = __importDefault(require("../models/userModel"));
+const postModel_1 = __importDefault(require("../models/postModel"));
 const TOKEN_EXPIRATION = "24h";
 // Display details about an individual user
 // GET user
@@ -27,6 +28,7 @@ exports.user_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, func
             icon: 1,
             createdAt: 1,
             communities: 1,
+            votes: 1,
         }).populate("communities");
         // return queried user as json
         return res.json({ user });
@@ -129,13 +131,14 @@ exports.user_sign_up = [
                 password: hashedPassword,
                 permission: "regular",
                 communities: [],
+                votes: {},
             });
             // and save it to database
-            yield newUser.save();
+            const user = yield newUser.save();
             // generate a signed son web token with the contents of user object and return it in the response
             // user must be converted to JSON
             const token = jsonwebtoken_1.default.sign(newUser.toJSON(), process.env.AUTH_SECRET, { expiresIn: TOKEN_EXPIRATION });
-            return res.json({ user: newUser, token });
+            return res.json({ user, token });
         }
         catch (err) {
             return next(err);
@@ -243,4 +246,50 @@ exports.user_delete = (req, res, next) => {
         res.json({ response: `deleted user ${req.params.id}` });
     });
 };
+// Voting mechanism
+exports.user_vote = [
+    (0, express_validator_1.body)("vote")
+        .custom((value, { req }) => {
+        if (value === undefined ||
+            (value !== "upVote" && value !== "downVote")) {
+            throw new Error("Invalid vote format");
+        }
+        // Indicates the success of this synchronous custom validator
+        return true;
+    })
+        .withMessage("Invalid vote format"),
+    (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+        const errors = (0, express_validator_1.validationResult)(req);
+        // if validation didn't succeed
+        if (!errors.isEmpty()) {
+            // Return errors
+            return res.status(400).send({ errors: errors.array() });
+        }
+        // If its valid
+        try {
+            const { userId, postId } = req.params;
+            // if post doesn't exist, throw error
+            const post = yield postModel_1.default.findById(postId, { text: 1 });
+            if (post === null) {
+                return res.status(400).send({
+                    errors: [{ msg: "Post doesn't exist" }],
+                });
+            }
+            // option to return updated user
+            const updateOption = {
+                new: true,
+                upsert: true,
+                rawResult: true,
+            };
+            // location inside user document where vote will go
+            const votePath = `votes.${postId}`;
+            // update user in database
+            const updatedUser = yield userModel_1.default.findByIdAndUpdate(userId, { $set: { [votePath]: req.body.vote } }, updateOption);
+            return res.json({ user: updatedUser.value });
+        }
+        catch (err) {
+            return next(err);
+        }
+    }),
+];
 //# sourceMappingURL=userController.js.map
