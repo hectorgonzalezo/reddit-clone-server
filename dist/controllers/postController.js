@@ -66,6 +66,11 @@ exports.post_create = [
         }
     }))
         .withMessage("Community doesn't exist"),
+    (0, express_validator_1.body)("url")
+        .optional()
+        .trim()
+        .isURL()
+        .withMessage("URL isn't valid"),
     (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const errors = (0, express_validator_1.validationResult)(req);
         // if validation didn't succeed
@@ -74,15 +79,19 @@ exports.post_create = [
             return res.status(400).send({ errors: errors.array() });
         }
         try {
-            // Create a new post
-            const newPost = new postModel_1.default({
+            const post = {
                 title: req.body.title,
                 text: req.body.text,
                 community: req.body.community,
                 user: req.body.userId,
                 upVotes: 0,
                 comments: [],
-            });
+            };
+            if (req.body.url !== '') {
+                post.url = req.body.url;
+            }
+            // Create a new post
+            const newPost = new postModel_1.default(post);
             // Save it to database
             const savedPost = yield newPost.save();
             return res.send({ post: savedPost });

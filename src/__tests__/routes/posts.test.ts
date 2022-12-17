@@ -82,6 +82,7 @@ describe("GET posts", () => {
       text: "This is a mock post made for testing purposes",
       user: userId,
       community: mockCommunityId,
+      url: 'http://mock.com'
     });
 
     const [post1, post2] = await Promise.all([
@@ -125,6 +126,18 @@ describe("GET posts", () => {
     expect(res.body.post.community.toString()).toEqual(mockCommunityId);
     // It has timestamp
     expect(res.body.post.createdAt).not.toBe(undefined);
+    // It has no url
+    expect(res.body.post.url).toBe(undefined); 
+  });
+
+  test("If post has url, return it", async () => {
+    const res = await request(app).get(`/posts/${mockPost2Id}`);
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // It has url
+    expect(res.body.post.url).toBe(mockPost2.url); 
   });
 
   test("Looking for a non existing post returns an error", async () => {
@@ -230,6 +243,40 @@ describe("POST/create posts", () => {
     expect(res.body.post.upVotes).toBe(0);
     // comments is an empty array
     expect(res.body.post.comments).toEqual([]);
+    // it has no url
+    expect(res.body.post.url).toBe(undefined);
+  });
+
+  test("URL is optional", async () => {
+    const newPost = {
+      title: "New mock post",
+      text: "New fake post",
+      community: mockCommunityId,
+      url: 'http://fake.com/fake'
+    };
+
+    const res = await request(app)
+      .post("/posts/")
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send(newPost);
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // Return the correct  info
+    expect(res.body.post.title).toBe(newPost.title);
+    expect(res.body.post.text).toBe(newPost.text);
+    expect(res.body.post.community).toBe(newPost.community);
+    // assign current user to be the post creator
+    expect(res.body.post.user.toString()).toBe(userId);
+    // upvotes is 0
+    expect(res.body.post.upVotes).toBe(0);
+    // comments is an empty array
+    expect(res.body.post.comments).toEqual([]);
+    // it has url
+    expect(res.body.post.url).toBe('http://fake.com/fake');
+
   });
 
   test("Not allowed if user isn't logged in", async () => {
@@ -350,6 +397,26 @@ describe("POST/create posts", () => {
     expect(res.status).toEqual(400);
     expect(res.body.errors).not.toBe(undefined);
     expect(res.body.errors[0].msg).toEqual("Community doesn't exist");
+  });
+
+  test("Not allowed if URL isn't valid", async () => {
+    const newPost = {
+      title: "newMock",
+      text: "New post",
+      community: mockCommunityId,
+      url: '1234'
+    };
+
+    const res = await request(app)
+      .post("/posts/")
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send(newPost);
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual("URL isn't valid");
   });
 });
 

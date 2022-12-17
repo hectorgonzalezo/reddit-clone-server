@@ -64,6 +64,11 @@ exports.post_create = [
       }
     })
     .withMessage("Community doesn't exist"),
+  body("url")
+    .optional()
+    .trim()
+    .isURL()
+    .withMessage("URL isn't valid"),
   async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     // if validation didn't succeed
@@ -72,15 +77,20 @@ exports.post_create = [
       return res.status(400).send({ errors: errors.array() });
     }
     try {
-      // Create a new post
-      const newPost = new Post({
+      const post = {
         title: req.body.title,
         text: req.body.text,
         community: req.body.community,
         user: req.body.userId,
         upVotes: 0,
         comments: [],
-      });
+      } as IPost;
+      if (req.body.url !== '') {
+        post.url = req.body.url
+      }
+
+      // Create a new post
+      const newPost = new Post(post);
 
       // Save it to database
       const savedPost = await newPost.save();

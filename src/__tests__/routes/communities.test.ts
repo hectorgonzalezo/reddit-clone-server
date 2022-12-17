@@ -1262,9 +1262,6 @@ describe("Subscribe/unsubscribe user to community", () => {
       .put(`/communities/${mockCommunityId}/subscription/${userId}`)
       .set("Authorization", `Bearer ${token}`);
     
-    console.log(res.body.user);
-    console.log(res.body.community);
-
     // return ok status and json
     expect(res.status).toEqual(200);
     expect(/.+\/json/.test(res.type)).toBe(true);
@@ -1401,7 +1398,6 @@ describe("Subscribe/unsubscribe user to community", () => {
     const res = await request(app)
       .put(`/communities/${mockCommunityId}/subscription/123456789a123456789b1234`)
       .set("Authorization", `Bearer ${token}`);
-    console.log(res.body);
 
     // return unauthorized status and json
     expect(res.status).toEqual(403);

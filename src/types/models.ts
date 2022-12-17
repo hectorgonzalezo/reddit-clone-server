@@ -19,6 +19,7 @@ export interface IPost extends Document {
   community: ObjectId | ICommunity;
   upVotes: number;
   comments: [] | ObjectId[] | IComment[];
+  url?: URL;
   createdAt?: string;
   updatedAt?: string;
   commentsNum?: number;
