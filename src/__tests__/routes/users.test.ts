@@ -103,26 +103,8 @@ afterAll(async () => {
   await Post.findByIdAndDelete(mockPostId);
   await Post.findByIdAndDelete(mockPost2Id);
 })
-  test("Get info about a user impossible without authorization", async () => {
-    const res = await request(app).get("/123456789a123456789b1234");
 
-    // Return unauthorized status code
-    expect(res.status).toEqual(403);
-    expect(/.+\/json/.test(res.type)).toBe(true);
-    // returns error if user is not authorized
-    expect(res.body).toEqual({
-      errors: [{ msg: "Only administrators can get info about users" }],
-    });
-  });
-
-  test("Wrong format of id returns nothing", async () => {
-    const res = await request(app).get("/12345");
-
-    // Return not found status code
-    expect(res.status).toEqual(404);
-  });
-
-  test("Get info about a user if authorized", async () => {
+  test("Get info about a user", async () => {
     // log in and get token
     const logIn = await request(app)
       .post("/log-in")
@@ -137,8 +119,7 @@ afterAll(async () => {
 
     // query user with admin token
     const res = await request(app)
-      .get(`/${userId}`)
-      .set("Authorization", `Bearer ${token}`);
+      .get(`/${userId}`);
 
     expect(res.status).toEqual(200);
     expect(/.+\/json/.test(res.type)).toBe(true);

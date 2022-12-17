@@ -19,27 +19,7 @@ const router = express_1.default.Router();
 require("../passport");
 // GET a single user
 // only if user is authorized
-router.get("/:id([a-zA-Z0-9]{24})", (req, res, next) => {
-    passport_1.default.authenticate("jwt", { session: false }, (err, user) => {
-        if (err) {
-            return next(err);
-        }
-        // Only show users if user is administrator
-        if (user.permission === "admin") {
-            next();
-        }
-        else {
-            // if user is not admin, return error
-            res.status(403).send({
-                errors: [
-                    {
-                        msg: "Only administrators can get info about users",
-                    },
-                ],
-            });
-        }
-    })(req, res, next);
-}, usersController.user_detail);
+router.get("/:id([a-zA-Z0-9]{24})", usersController.user_detail);
 // voting
 router.put("/:userId([a-zA-Z0-9]{24})/vote/:postId([a-zA-Z0-9]{24})", (req, res, next) => {
     passport_1.default.authenticate("jwt", { session: false }, (err, user) => __awaiter(void 0, void 0, void 0, function* () {

@@ -7,34 +7,7 @@ require("../passport");
 
 // GET a single user
 // only if user is authorized
-router.get(
-  "/:id([a-zA-Z0-9]{24})",
-  (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate(
-      "jwt",
-      { session: false },
-      (err: any, user: IUser) => {
-        if (err) {
-          return next(err);
-        }
-        // Only show users if user is administrator
-        if (user.permission === "admin") {
-          next();
-        } else {
-          // if user is not admin, return error
-          res.status(403).send({
-            errors: [
-              {
-                msg: "Only administrators can get info about users",
-              },
-            ],
-          });
-        }
-      }
-    )(req, res, next);
-  },
-  usersController.user_detail
-);
+router.get("/:id([a-zA-Z0-9]{24})", usersController.user_detail);
 
 // voting
 router.put(
