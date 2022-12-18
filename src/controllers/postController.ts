@@ -1,4 +1,5 @@
 import Post from "../models/postModel";
+import url from 'url';
 import Community from "../models/communityModel";
 import { QueryOptions } from "mongoose";
 import { Request, Response, NextFunction } from "express";
@@ -12,7 +13,22 @@ exports.posts_list = async (
   next: NextFunction
 ) => {
   try {
-    const posts = await Post.find();
+    const community = req.query.community;
+    let posts: IPost[];
+    // if url has the community query string, look for posts only in that community
+    if (community !== undefined) {
+      // look if community exists
+      const existingCommunity = await Community.findById(community, { _id: 1 });
+      if (existingCommunity === null) {
+        return res
+          .status(404)
+          .send({ error: `No community with id ${community} found` }); 
+      }
+      // if it does, look for posts inside that community
+      posts = await Post.find({ community });
+    } else {
+      posts = await Post.find();
+    }
     return res.status(200).send({ posts });
   } catch (error) {
     return next(error);

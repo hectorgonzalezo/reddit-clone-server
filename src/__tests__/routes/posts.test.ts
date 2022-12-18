@@ -25,6 +25,8 @@ let adminToken: string;
 let adminUserId: string;
 let mockCommunity: ICommunity;
 let mockCommunityId: string;
+let mockCommunity2: ICommunity;
+let mockCommunity2Id: string;
 let mockPost: IPost;
 let mockPostId: string;
 let mockPost2: IPost;
@@ -69,6 +71,19 @@ describe("GET posts", () => {
     const community = await mockCommunity.save();
     mockCommunityId = community._id.toString();
 
+    // Add fake community
+    mockCommunity2 = new Community({
+      name: "mockCommunity",
+      subtitle: "Fake community",
+      description: "This is a fake community created for testing purposes",
+      creator: userId,
+      users: [],
+      posts: [],
+    });
+
+    const community2 = await mockCommunity2.save();
+    mockCommunity2Id = community2._id.toString();
+
     // Create two posts
     mockPost = new Post({
       title: "Mock post",
@@ -81,7 +96,7 @@ describe("GET posts", () => {
       title: "Mock post 2",
       text: "This is a mock post made for testing purposes",
       user: userId,
-      community: mockCommunityId,
+      community: mockCommunity2Id,
       url: 'http://mock.com'
     });
 
@@ -109,6 +124,27 @@ describe("GET posts", () => {
     expect(/.+\/json/.test(res.type)).toBe(true);
     // return both mock posts
     expect(res.body.posts.length).toBe(2);
+  });
+
+  test("Get all posts in community", async () => {
+    const res = await request(app).get(`/posts/?community=${mockCommunity2Id}`);
+
+    // return ok status and json
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return both mock posts
+    expect(res.body.posts.length).toBe(1);
+  });
+
+  test("Get all posts in community throws error if invalid id", async () => {
+    const res = await request(app).get(`/posts/?community=123456789a123456789b1234`);
+
+    expect(res.status).toEqual(404);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // returns error if user is not authorized
+    expect(res.body.error).toEqual(
+      "No community with id 123456789a123456789b1234 found"
+    );
   });
 
   test("Get info about a particular post", async () => {

@@ -18,7 +18,23 @@ const express_validator_1 = require("express-validator");
 // List all posts in database
 exports.posts_list = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const posts = yield postModel_1.default.find();
+        const community = req.query.community;
+        let posts;
+        // if url has the community query string, look for posts only in that community
+        if (community !== undefined) {
+            // look if community exists
+            const existingCommunity = yield communityModel_1.default.findById(community, { _id: 1 });
+            if (existingCommunity === null) {
+                return res
+                    .status(404)
+                    .send({ error: `No community with id ${community} found` });
+            }
+            // if it does, look for posts inside that community
+            posts = yield postModel_1.default.find({ community });
+        }
+        else {
+            posts = yield postModel_1.default.find();
+        }
         return res.status(200).send({ posts });
     }
     catch (error) {
