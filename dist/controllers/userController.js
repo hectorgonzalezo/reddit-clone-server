@@ -149,19 +149,23 @@ exports.user_sign_up = [
 // PUT user
 exports.user_update = [
     (0, express_validator_1.body)("username", "Username is required")
+        .optional()
         .trim()
         .isLength({ min: 3, max: 25 })
         .escape()
         .withMessage("Username must be between 3 and 25 characters long"),
     (0, express_validator_1.body)("email", "Email is required")
+        .optional()
         .trim()
         .isEmail()
         .withMessage("Invalid email"),
     (0, express_validator_1.body)("password", "Password is required")
+        .optional()
         .trim()
         .isLength({ min: 6 })
         .withMessage("Password must be at least 6 characters long"),
     (0, express_validator_1.body)("passwordConfirm", "Password confirmation is required")
+        .optional()
         .trim()
         .isLength({ min: 6 })
         .withMessage("Password must be at least 6 characters long")
@@ -186,8 +190,6 @@ exports.user_update = [
                 username: 1,
                 email: 1,
             });
-            // encrypt password
-            const hashedPassword = yield bcryptjs_1.default.hash(req.body.password, 10);
             // look in db for a user with the same username
             const existingUser = yield userModel_1.default.find({ username: req.body.username });
             // if one exists and its not the user itself, send error
@@ -209,15 +211,25 @@ exports.user_update = [
                 });
             }
             const userObj = {
-                username: req.body.username,
-                email: req.body.email,
-                password: hashedPassword,
-                permission: "regular",
                 _id: req.params.id,
             };
             // If an icon is provided, add it to obj
             if (req.body.icon !== undefined) {
                 userObj.icon = req.body.icon;
+            }
+            // If a username is provided  add it to obj
+            if (req.body.username !== undefined) {
+                userObj.username = req.body.username;
+            }
+            // If a email is provided  add it to obj
+            if (req.body.email !== undefined) {
+                userObj.email = req.body.email;
+            }
+            // If a password is provided  add it to obj
+            if (req.body.password !== undefined) {
+                // encrypt password
+                const hashedPassword = yield bcryptjs_1.default.hash(req.body.password, 10);
+                userObj.password = hashedPassword;
             }
             // if no user exists with provided username, create one
             const newUser = new userModel_1.default(userObj);

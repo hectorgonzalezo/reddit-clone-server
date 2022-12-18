@@ -378,10 +378,6 @@ describe("User update", () => {
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
       .send({
-        username: "updated",
-        email: "updated@mock.com",
-        password: "123456",
-        passwordConfirm: "123456",
         icon: "http://fakeIcon.com/icon"
       });
 
@@ -390,8 +386,7 @@ describe("User update", () => {
 
     // return user and token
     expect(res.body).toHaveProperty("user");
-    expect(res.body.user.username).toBe("updated");
-    expect(res.body.user.email).toBe("updated@mock.com");
+    expect(res.body.user.username).toBe("mocka");
     expect(res.body.user.permission).toBe("regular");
     expect(res.body.user.communities).toEqual([]);
     expect(res.body.user.icon).toBe("http://fakeIcon.com/icon");

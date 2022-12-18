@@ -163,19 +163,23 @@ exports.user_sign_up = [
 // PUT user
 exports.user_update = [
   body("username", "Username is required")
+    .optional()
     .trim()
     .isLength({ min: 3, max: 25 })
     .escape()
     .withMessage("Username must be between 3 and 25 characters long"),
   body("email", "Email is required")
+    .optional()
     .trim()
     .isEmail()
     .withMessage("Invalid email"),
   body("password", "Password is required")
+    .optional()
     .trim()
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long"),
   body("passwordConfirm", "Password confirmation is required")
+    .optional()
     .trim()
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long")
@@ -202,8 +206,7 @@ exports.user_update = [
         email: 1,
       }) as IUser;
 
-      // encrypt password
-      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
 
       // look in db for a user with the same username
       const existingUser = await User.find({ username: req.body.username });
@@ -234,16 +237,29 @@ exports.user_update = [
       }
 
       const userObj = {
-        username: req.body.username,
-        email: req.body.email,
-        password: hashedPassword,
-        permission: "regular",
         _id: req.params.id,
       } as IUser;
 
       // If an icon is provided, add it to obj
       if (req.body.icon !== undefined) {
         userObj.icon = req.body.icon;
+      } 
+
+      // If a username is provided  add it to obj
+      if (req.body.username !== undefined) {
+        userObj.username = req.body.username;
+      } 
+
+      // If a email is provided  add it to obj
+      if (req.body.email !== undefined) {
+        userObj.email = req.body.email;
+      } 
+
+      // If a password is provided  add it to obj
+      if (req.body.password !== undefined) {
+        // encrypt password
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+        userObj.password = hashedPassword; 
       } 
 
       // if no user exists with provided username, create one
