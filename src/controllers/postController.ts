@@ -63,7 +63,8 @@ exports.post_create = [
     .isLength({ min: 3, max: 300 })
     .escape()
     .withMessage("Post title must be between 3 and 300 characters long"),
-  body("text", "Post text is required")
+  body("text")
+    .optional()
     .trim()
     .isLength({ min: 1 })
     .escape()
@@ -85,6 +86,11 @@ exports.post_create = [
     .trim()
     .isURL()
     .withMessage("URL isn't valid"),
+  body("imageUrl")
+    .optional()
+    .trim()
+    .isURL()
+    .withMessage("Image URL isn't valid"),
   async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     // if validation didn't succeed
@@ -103,8 +109,12 @@ exports.post_create = [
       } as IPost;
       // add url if there's one
       if (req.body.url !== '') {
-        post.url = req.body.url
-      }
+        post.url = req.body.url;
+      } 
+      // add imageUrl if there's one
+      if (req.body.imageUrl !== '') {
+        post.imageUrl = req.body.imageUrl;
+      } 
 
       // Create a new post
       const newPost = new Post(post);

@@ -286,7 +286,6 @@ describe("POST/create posts", () => {
   test("URL is optional", async () => {
     const newPost = {
       title: "New mock post",
-      text: "New fake post",
       community: mockCommunityId,
       url: 'http://fake.com/fake'
     };
@@ -302,7 +301,6 @@ describe("POST/create posts", () => {
 
     // Return the correct  info
     expect(res.body.post.title).toBe(newPost.title);
-    expect(res.body.post.text).toBe(newPost.text);
     expect(res.body.post.community).toBe(newPost.community);
     // assign current user to be the post creator
     expect(res.body.post.user.toString()).toBe(userId);
@@ -312,6 +310,37 @@ describe("POST/create posts", () => {
     expect(res.body.post.comments).toEqual([]);
     // it has url
     expect(res.body.post.url).toBe('http://fake.com/fake');
+
+  });
+
+
+  test("ImageURL is optional", async () => {
+    const newPost = {
+      title: "New mock post",
+      community: mockCommunityId,
+      imageUrl: 'http://fake.com/fake'
+    };
+
+    const res = await request(app)
+      .post("/posts/")
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send(newPost);
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // Return the correct  info
+    expect(res.body.post.title).toBe(newPost.title);
+    expect(res.body.post.community).toBe(newPost.community);
+    // assign current user to be the post creator
+    expect(res.body.post.user.toString()).toBe(userId);
+    // upvotes is 0
+    expect(res.body.post.upVotes).toBe(0);
+    // comments is an empty array
+    expect(res.body.post.comments).toEqual([]);
+    // it has imageUrl
+    expect(res.body.post.imageUrl).toBe('http://fake.com/fake');
 
   });
 
@@ -353,6 +382,51 @@ describe("POST/create posts", () => {
     expect(res.body.errors[0].msg).toEqual(
       "Post title must be between 3 and 300 characters long"
     );
+  });
+
+  test("Not allowed if Url isn't valid ", async () => {
+    const newPost = {
+      title: "New mock post",
+      community: mockCommunityId,
+      url: '1234'
+    };
+
+    const res = await request(app)
+      .post("/posts/")
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send(newPost);
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual(
+      "URL isn't valid"
+    );
+
+  });
+
+
+  test("Not allowed if ImageUrl isn't valid ", async () => {
+    const newPost = {
+      title: "New mock post",
+      community: mockCommunityId,
+      imageUrl: '1234'
+    };
+
+    const res = await request(app)
+      .post("/posts/")
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send(newPost);
+
+    // return Bad request error code
+    expect(res.status).toEqual(400);
+    expect(res.body.errors).not.toBe(undefined);
+    expect(res.body.errors[0].msg).toEqual(
+      "Image URL isn't valid"
+    );
+
   });
 
   test("Not allowed with long title", async () => {

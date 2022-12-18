@@ -21,12 +21,13 @@ export interface IUser extends Document {
 
 export interface IPost extends Document {
   title: string;
-  text: string;
+  text?: string;
   user: ObjectId;
   community: ObjectId | ICommunity;
   upVotes: number;
   comments: [] | ObjectId[] | IComment[];
-  url?: URL;
+  url?: string;
+  imageUrl?: string;
   createdAt?: string;
   updatedAt?: string;
   commentsNum?: number;

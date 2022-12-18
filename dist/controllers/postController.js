@@ -65,7 +65,8 @@ exports.post_create = [
         .isLength({ min: 3, max: 300 })
         .escape()
         .withMessage("Post title must be between 3 and 300 characters long"),
-    (0, express_validator_1.body)("text", "Post text is required")
+    (0, express_validator_1.body)("text")
+        .optional()
         .trim()
         .isLength({ min: 1 })
         .escape()
@@ -87,6 +88,11 @@ exports.post_create = [
         .trim()
         .isURL()
         .withMessage("URL isn't valid"),
+    (0, express_validator_1.body)("imageUrl")
+        .optional()
+        .trim()
+        .isURL()
+        .withMessage("Image URL isn't valid"),
     (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const errors = (0, express_validator_1.validationResult)(req);
         // if validation didn't succeed
@@ -106,6 +112,10 @@ exports.post_create = [
             // add url if there's one
             if (req.body.url !== '') {
                 post.url = req.body.url;
+            }
+            // add imageUrl if there's one
+            if (req.body.imageUrl !== '') {
+                post.imageUrl = req.body.imageUrl;
             }
             // Create a new post
             const newPost = new postModel_1.default(post);
