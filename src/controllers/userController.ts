@@ -288,7 +288,7 @@ exports.user_vote = [
     .custom((value, { req }) => {
       if (
         value === undefined ||
-        (value !== "upVote" && value !== "downVote")
+        (value !== "upVote" && value !== "downVote" && value !== "")
       ) {
         throw new Error("Invalid vote format");
       }

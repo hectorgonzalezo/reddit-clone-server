@@ -251,7 +251,7 @@ exports.user_vote = [
     (0, express_validator_1.body)("vote")
         .custom((value, { req }) => {
         if (value === undefined ||
-            (value !== "upVote" && value !== "downVote")) {
+            (value !== "upVote" && value !== "downVote" && value !== "")) {
             throw new Error("Invalid vote format");
         }
         // Indicates the success of this synchronous custom validator

@@ -1368,8 +1368,35 @@ describe("Vote for a particular community", () => {
     expect(res.body).toHaveProperty("user");
     expect(res.body.user.votes[mockPostId]).toBe("upVote");
 
-    // As user it not signed it, no token should be returned
-    expect(res.body).not.toHaveProperty("token");
+  });
+
+  test("Neutral vote allowed", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "",
+      });
+
+    // return ok status code
+    expect(res.status).toEqual(200);
+
+    // return user and token
+    expect(res.body).toHaveProperty("user");
+    expect(res.body.user.votes[mockPostId]).toBe("");
+
   });
 
   test("Voting twice for the same post leaves only the last vote", async () => {
