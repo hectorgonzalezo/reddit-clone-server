@@ -8,7 +8,7 @@ import Community from "../../models/communityModel";
 import Post from "../../models/postModel";
 import Comment from "../../models/commentModel";
 import User from "../../models/userModel";
-import { ICommunity, IPost } from "../../types/models";
+import { ICommunity, IPost, IComment } from "../../types/models";
 
 const app = express();
 
@@ -31,6 +31,8 @@ let mockPost: IPost;
 let mockPostId: string;
 let mockPost2: IPost;
 let mockPost2Id: string;
+let mockComment: IComment
+let mockCommentId: string;
 
 describe("GET posts", () => {
   // Add communities, posts and user to mock database
@@ -84,6 +86,17 @@ describe("GET posts", () => {
     const community2 = await mockCommunity2.save();
     mockCommunity2Id = community2._id.toString();
 
+    mockComment = new Comment({
+      text: 'mockComment',
+      user: user._id.toString(),
+      upVotes: 0,
+      responses: [],
+    });
+
+    const comment = await mockComment.save();
+
+    mockCommentId = comment._id.toString();
+
     // Create two posts
     mockPost = new Post({
       title: "Mock post",
@@ -97,7 +110,8 @@ describe("GET posts", () => {
       text: "This is a mock post made for testing purposes",
       user: userId,
       community: mockCommunity2Id,
-      url: 'http://mock.com'
+      url: 'http://mock.com',
+      comments: [mockCommentId]
     });
 
     const [post1, post2] = await Promise.all([
@@ -164,6 +178,21 @@ describe("GET posts", () => {
     expect(res.body.post.createdAt).not.toBe(undefined);
     // It has no url
     expect(res.body.post.url).toBe(undefined); 
+  });
+
+  test.only("If post has comments, they're automatically populated", async () => {
+    const res = await request(app).get(`/posts/${mockPost2Id}`);
+
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+
+    // virtual property
+    expect(res.body.post.commentsNum).toBe(1);
+    expect(res.body.post.community.toString()).toEqual(mockCommunity2Id);
+    // comment is populated
+    expect(res.body.post.comments[0].text).toBe(mockComment.text);
+    expect(res.body.post.comments[0].upVotes).toBe(mockComment.upVotes);
+    expect(res.body.post.comments[0].responses).toEqual(mockComment.responses);
   });
 
   test("If post has url, return it", async () => {
