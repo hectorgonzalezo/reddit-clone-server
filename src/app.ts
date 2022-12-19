@@ -3,6 +3,7 @@ import { ExtendedRequest } from "./types/extendedRequest";
 import express, { Request, Response, NextFunction } from "express";
 const path = require("path");
 const cookieParser = require("cookie-parser");
+const cors  = require("cors");
 const logger = require("morgan");
 const compression = require("compression");
 const helmet = require("helmet");
@@ -23,6 +24,9 @@ const postsRouter = require("./routes/posts");
 const commentsRouter = require("./routes/comments");
 
 const app = express();
+
+// Add cors
+app.use(cors());
 
 // compress all routes
 app.use(compression());

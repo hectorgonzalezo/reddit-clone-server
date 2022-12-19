@@ -7,6 +7,7 @@ const http_errors_1 = __importDefault(require("http-errors"));
 const express_1 = __importDefault(require("express"));
 const path = require("path");
 const cookieParser = require("cookie-parser");
+const cors = require("cors");
 const logger = require("morgan");
 const compression = require("compression");
 const helmet = require("helmet");
@@ -23,6 +24,8 @@ const communitiesRouter = require("./routes/communities");
 const postsRouter = require("./routes/posts");
 const commentsRouter = require("./routes/comments");
 const app = (0, express_1.default)();
+// Add cors
+app.use(cors());
 // compress all routes
 app.use(compression());
 app.use(helmet());
