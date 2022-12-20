@@ -65,13 +65,11 @@ exports.post_create = [
     (0, express_validator_1.body)("title", "Post title is required")
         .trim()
         .isLength({ min: 3, max: 300 })
-        .escape()
         .withMessage("Post title must be between 3 and 300 characters long"),
     (0, express_validator_1.body)("text")
         .optional()
         .trim()
         .isLength({ min: 1 })
-        .escape()
         .withMessage("Post text can't be empty"),
     (0, express_validator_1.body)("community")
         .trim()
@@ -136,12 +134,10 @@ exports.post_update = [
     (0, express_validator_1.body)("title", "Post title is required")
         .trim()
         .isLength({ min: 3, max: 300 })
-        .escape()
         .withMessage("Post title must be between 3 and 300 characters long"),
     (0, express_validator_1.body)("text", "Post text is required")
         .trim()
         .isLength({ min: 1 })
-        .escape()
         .withMessage("Post text can't be empty"),
     (0, express_validator_1.body)("community", "A community is required")
         .optional()

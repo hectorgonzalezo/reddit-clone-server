@@ -56,14 +56,12 @@ exports.community_create = [
   body("subtitle", "Community subtitle is required")
     .trim()
     .isLength({ min: 3, max: 100 })
-    .escape()
     .withMessage(
       "Community subtitle must be between 3 and 100 characters long"
     ),
   body("description", "Community description is required")
     .trim()
     .isLength({ min: 3, max: 300 })
-    .escape()
     .withMessage(
       "Community description must be between 3 and 300 characters long"
     ),
@@ -139,14 +137,12 @@ exports.community_update = [
   body("subtitle", "Community subtitle is required")
     .trim()
     .isLength({ min: 3, max: 100 })
-    .escape()
     .withMessage(
       "Community subtitle must be between 3 and 100 characters long"
     ),
   body("description", "Community description is required")
     .trim()
     .isLength({ min: 3, max: 300 })
-    .escape()
     .withMessage(
       "Community description must be between 3 and 300 characters long"
     ),

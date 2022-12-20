@@ -54,7 +54,6 @@ exports.comment_create = [
     (0, express_validator_1.body)("text", "Comment text is required")
         .trim()
         .isLength({ min: 1 })
-        .escape()
         .withMessage("Comment text can't be empty"),
     (0, express_validator_1.body)("parent")
         .optional()
@@ -112,7 +111,6 @@ exports.comment_update = [
     (0, express_validator_1.body)("text", "Comment text is required")
         .trim()
         .isLength({ min: 1 })
-        .escape()
         .withMessage("Comment text can't be empty"),
     (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const errors = (0, express_validator_1.validationResult)(req);

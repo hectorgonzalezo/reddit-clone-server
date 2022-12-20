@@ -56,12 +56,10 @@ exports.community_create = [
     (0, express_validator_1.body)("subtitle", "Community subtitle is required")
         .trim()
         .isLength({ min: 3, max: 100 })
-        .escape()
         .withMessage("Community subtitle must be between 3 and 100 characters long"),
     (0, express_validator_1.body)("description", "Community description is required")
         .trim()
         .isLength({ min: 3, max: 300 })
-        .escape()
         .withMessage("Community description must be between 3 and 300 characters long"),
     (0, express_validator_1.body)("icon").optional().trim().isURL().withMessage("Icon can only be a URL"),
     (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
@@ -124,12 +122,10 @@ exports.community_update = [
     (0, express_validator_1.body)("subtitle", "Community subtitle is required")
         .trim()
         .isLength({ min: 3, max: 100 })
-        .escape()
         .withMessage("Community subtitle must be between 3 and 100 characters long"),
     (0, express_validator_1.body)("description", "Community description is required")
         .trim()
         .isLength({ min: 3, max: 300 })
-        .escape()
         .withMessage("Community description must be between 3 and 300 characters long"),
     (0, express_validator_1.body)("icon").optional().trim().isURL().withMessage("Icon can only be a URL"),
     (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {

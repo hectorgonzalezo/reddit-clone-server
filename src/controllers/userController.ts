@@ -206,8 +206,6 @@ exports.user_update = [
         email: 1,
       }) as IUser;
 
-
-
       // look in db for a user with the same username
       const existingUser = await User.find({ username: req.body.username });
 

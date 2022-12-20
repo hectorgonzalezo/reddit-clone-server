@@ -53,7 +53,6 @@ exports.comment_create = [
   body("text", "Comment text is required")
     .trim()
     .isLength({ min: 1 })
-    .escape()
     .withMessage("Comment text can't be empty"),
   body("parent")
     .optional()
@@ -113,7 +112,6 @@ exports.comment_update = [
   body("text", "Comment text is required")
     .trim()
     .isLength({ min: 1 })
-    .escape()
     .withMessage("Comment text can't be empty"),
   async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);

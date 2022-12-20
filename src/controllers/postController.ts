@@ -65,13 +65,11 @@ exports.post_create = [
   body("title", "Post title is required")
     .trim()
     .isLength({ min: 3, max: 300 })
-    .escape()
     .withMessage("Post title must be between 3 and 300 characters long"),
   body("text")
     .optional()
     .trim()
     .isLength({ min: 1 })
-    .escape()
     .withMessage("Post text can't be empty"),
   body("community")
     .trim()
@@ -139,12 +137,10 @@ exports.post_update = [
   body("title", "Post title is required")
     .trim()
     .isLength({ min: 3, max: 300 })
-    .escape()
     .withMessage("Post title must be between 3 and 300 characters long"),
   body("text", "Post text is required")
     .trim()
     .isLength({ min: 1 })
-    .escape()
     .withMessage("Post text can't be empty"),
   body("community", "A community is required")
     .optional()
