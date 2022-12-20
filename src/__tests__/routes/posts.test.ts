@@ -148,6 +148,9 @@ describe("GET posts", () => {
     expect(/.+\/json/.test(res.type)).toBe(true);
     // return both mock posts
     expect(res.body.posts.length).toBe(1);
+    // populate user and community
+    expect(res.body.posts[0].user.username).toBe("mocka");
+    expect(res.body.posts[0].community.name).toBe(mockCommunity.name);
   });
 
   test("Get all posts in community throws error if invalid id", async () => {
@@ -170,17 +173,20 @@ describe("GET posts", () => {
     // Return the correct post info
     expect(res.body.post.title).toBe(mockPost.title);
     expect(res.body.post.text).toBe(mockPost.text);
-    expect(res.body.post.user.toString()).toBe(userId);
+    expect(res.body.post.user._id).toBe(userId);
     // virtual property
     expect(res.body.post.commentsNum).toBe(0);
-    expect(res.body.post.community.toString()).toEqual(mockCommunityId);
+    expect(res.body.post.community._id).toEqual(mockCommunityId);
     // It has timestamp
     expect(res.body.post.createdAt).not.toBe(undefined);
     // It has no url
     expect(res.body.post.url).toBe(undefined); 
+    // populate user and community
+    expect(res.body.post.user.username).toBe("mocka");
+    expect(res.body.post.community.name).toBe(mockCommunity.name);
   });
 
-  test.only("If post has comments, they're automatically populated", async () => {
+  test("If post has comments, they're automatically populated", async () => {
     const res = await request(app).get(`/posts/${mockPost2Id}`);
 
     expect(res.status).toEqual(200);
@@ -188,7 +194,7 @@ describe("GET posts", () => {
 
     // virtual property
     expect(res.body.post.commentsNum).toBe(1);
-    expect(res.body.post.community.toString()).toEqual(mockCommunity2Id);
+    expect(res.body.post.community._id).toEqual(mockCommunity2Id);
     // comment is populated
     expect(res.body.post.comments[0].text).toBe(mockComment.text);
     expect(res.body.post.comments[0].upVotes).toBe(mockComment.upVotes);

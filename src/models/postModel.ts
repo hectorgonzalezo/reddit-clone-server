@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import { IPost } from "../types/models";
 require('./commentModel');
+require('./userModel');
+require('./communityModel');
 require('mongoose-type-url');
 
 const Schema = mongoose.Schema;
@@ -8,7 +10,7 @@ const Schema = mongoose.Schema;
 const PostSchema = new Schema({
   title: { type: String, minLength: 1, maxLength: 300, required: true },
   text: { type: String, minLength: 1, required: false },
-  user: { type: Schema.Types.ObjectId, required: true },
+  user: { type: Schema.Types.ObjectId, required: true, ref: "User" },
   community: { type: Schema.Types.ObjectId, ref: "Community", required: true },
   upVotes: { type: Number, required: false, default: 0 },
   comments: [{ type: Schema.Types.ObjectId, ref: "Comment", autopopulate: true }],

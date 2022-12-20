@@ -23,17 +23,19 @@ exports.posts_list = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
         // if url has the community query string, look for posts only in that community
         if (community !== undefined) {
             // look if community exists
-            const existingCommunity = yield communityModel_1.default.findById(community, { _id: 1 });
+            const existingCommunity = yield communityModel_1.default.findById(community, {
+                _id: 1,
+            });
             if (existingCommunity === null) {
                 return res
                     .status(404)
                     .send({ error: `No community with id ${community} found` });
             }
             // if it does, look for posts inside that community
-            posts = yield postModel_1.default.find({ community });
+            posts = yield postModel_1.default.find({ community }).populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
         }
         else {
-            posts = yield postModel_1.default.find();
+            posts = yield postModel_1.default.find().populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
         }
         return res.status(200).send({ posts });
     }
@@ -45,7 +47,7 @@ exports.posts_list = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
 // GET post
 exports.post_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const post = yield postModel_1.default.findById(req.params.id);
+        const post = yield postModel_1.default.findById(req.params.id).populate("user").populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
         if (post === null) {
             return res
                 .status(404)

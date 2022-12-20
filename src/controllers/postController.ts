@@ -18,16 +18,18 @@ exports.posts_list = async (
     // if url has the community query string, look for posts only in that community
     if (community !== undefined) {
       // look if community exists
-      const existingCommunity = await Community.findById(community, { _id: 1 });
+      const existingCommunity = await Community.findById(community, {
+        _id: 1,
+      });
       if (existingCommunity === null) {
         return res
           .status(404)
           .send({ error: `No community with id ${community} found` }); 
       }
       // if it does, look for posts inside that community
-      posts = await Post.find({ community });
+      posts = await Post.find({ community }).populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
     } else {
-      posts = await Post.find();
+      posts = await Post.find().populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
     }
     return res.status(200).send({ posts });
   } catch (error) {
@@ -43,7 +45,9 @@ exports.post_detail = async (
   next: NextFunction
 ) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findById(req.params.id).populate(
+      "user"
+    ).populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
     if (post === null) {
       return res
         .status(404)
