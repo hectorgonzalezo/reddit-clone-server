@@ -14,11 +14,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const postModel_1 = __importDefault(require("../models/postModel"));
 const communityModel_1 = __importDefault(require("../models/communityModel"));
+const userModel_1 = __importDefault(require("../models/userModel"));
 const express_validator_1 = require("express-validator");
 // List all posts in database
 exports.posts_list = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const community = req.query.community;
+        const user = req.query.user;
         let posts;
         // if url has the community query string, look for posts only in that community
         if (community !== undefined) {
@@ -32,10 +34,30 @@ exports.posts_list = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
                     .send({ error: `No community with id ${community} found` });
             }
             // if it does, look for posts inside that community
-            posts = yield postModel_1.default.find({ community }).populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
+            posts = yield postModel_1.default.find({ community })
+                .populate({ path: "community", select: "name users posts icon" })
+                .populate("user", "username");
+        }
+        else if (user !== undefined) {
+            // look for posts posted by a user
+            // look if user exists
+            const existingUser = yield userModel_1.default.findById(user, {
+                _id: 1,
+            });
+            if (existingUser === null) {
+                return res
+                    .status(404)
+                    .send({ error: `No User with id ${user} found` });
+            }
+            // if it does, look for posts inside that community
+            posts = yield postModel_1.default.find({ user })
+                .populate({ path: "community", select: "name users posts icon" })
+                .populate("user", "username");
         }
         else {
-            posts = yield postModel_1.default.find().populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
+            posts = yield postModel_1.default.find()
+                .populate({ path: "community", select: "name users posts icon" })
+                .populate("user", "username");
         }
         return res.status(200).send({ posts });
     }

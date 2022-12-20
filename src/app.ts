@@ -51,15 +51,15 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 app.use("/users/", usersRouter);
 app.use("/communities", communitiesRouter);
-app.use("/posts/", postsRouter);
 app.use(
-  "/posts/:postId/comments/:commentId",
+  "/posts/:postId/comments/",
   (req: ExtendedRequest, res: Response, next: NextFunction) => {
     req.postId = req.params.postId;
     next();
   },
   commentsRouter
 );
+app.use("/posts/", postsRouter);
 
 // catch 404 and forward to error handler
 app.use((req: Request, res: Response, next: NextFunction) => {

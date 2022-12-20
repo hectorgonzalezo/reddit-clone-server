@@ -174,7 +174,7 @@ describe("GET comments", () => {
 
     // Return the correct comment info
     expect(res.body.comment.text).toBe(mockComment.text);
-    expect(res.body.comment.user).toBe(userId);
+    expect(res.body.comment.user._id).toBe(userId);
     expect(res.body.comment.upVotes).toBe(mockComment.upVotes);
     // It has timestamp
     expect(res.body.comment.createdAt).not.toBe(undefined);
@@ -190,7 +190,7 @@ describe("GET comments", () => {
 
     // Return the correct comment info
     expect(res.body.comment.text).toBe(mockCommentResponse.text);
-    expect(res.body.comment.user).toBe(userId);
+    expect(res.body.comment.user._id).toBe(userId);
     expect(res.body.comment.upVotes).toBe(mockCommentResponse.upVotes);
   });
 
@@ -308,7 +308,7 @@ describe("POST/create comments", () => {
     // Return the correct  info
     expect(res.body.comment.text).toBe("New fake comment");
     // assign current user to be the comment creator
-    expect(res.body.comment.user.toString()).toBe(userId);
+    expect(res.body.comment.user._id).toBe(userId);
     // upvotes is 0
     expect(res.body.comment.upVotes).toBe(0);
     // responses is an empty array
@@ -781,21 +781,7 @@ describe("DELETE comments", () => {
     await Comment.findByIdAndDelete(mockComment2Id);
   });
 
-  test("Allowed for logged in regular user which is the comment creator", async () => {
-    const res = await request(app)
-      .delete(`/posts/${mockPostId}/comments/${mockCommentId}`)
-      .set("Authorization", `Bearer ${token}`);
 
-    // return ok status and json
-    expect(res.status).toEqual(200);
-    expect(/.+\/json/.test(res.type)).toBe(true);
-    // return delete message
-    expect(res.body.msg).toBe(`Comment ${mockCommentId} deleted`);
-
-    // Look for comment, it shouldn't be there
-    const comment = await Comment.findById(mockCommentId);
-    expect(comment).toBe(null);
-  });
 
   test("Not allowed if user isn't logged in", async () => {
     const res = await request(app).delete(
@@ -823,6 +809,22 @@ describe("DELETE comments", () => {
     expect(res.body).toEqual({
       errors: [{ msg: "Only the comment creator can delete it" }],
     });
+  });
+
+  test("Allowed for logged in regular user which is the comment creator", async () => {
+    const res = await request(app)
+      .delete(`/posts/${mockPostId}/comments/${mockCommentId}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    // return ok status and json
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return delete message
+    expect(res.body.msg).toBe(`Comment ${mockCommentId} deleted`);
+
+    // Look for comment, it shouldn't be there
+    const comment = await Comment.findById(mockCommentId);
+    expect(comment).toBe(null);
   });
 
   test("Deleting a non existing comment returns an error", async () => {

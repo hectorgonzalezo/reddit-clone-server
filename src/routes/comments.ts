@@ -46,7 +46,14 @@ router.put(
       { session: false },
       async (err: any, user: IUser) => {
         const comment = await Comment.findById(req.params.id, { user: 1 });
-        const isUserCreator = comment?.user.toString() === user._id?.toString();
+        if (comment === null) {
+          // If no community is found, send error;
+          return res
+            .status(404)
+            .send({ error: `No comment with id ${req.params.id} found` });
+        }
+        const commentUser = comment?.user as IUser;
+        const isUserCreator = commentUser._id?.toString() === user._id?.toString();
         const isUserAdmin = user.permission === "admin";
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
           // if user is not admin, return error
@@ -75,7 +82,15 @@ router.delete(
       { session: false },
       async (err: any, user: IUser) => {
         const comment = await Comment.findById(req.params.id, { user: 1 });
-        const isUserCreator = comment?.user.toString() === user._id?.toString();
+        if (comment === null) {
+          // If no community is found, send error;
+          return res
+            .status(404)
+            .send({ error: `No comment with id ${req.params.id} found` });
+        }
+        
+        const commentUser = comment?.user as IUser;
+        const isUserCreator = commentUser._id?.toString() === user._id?.toString();
         const isUserAdmin = user.permission === "admin";
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
           // if user is not admin, return error

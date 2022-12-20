@@ -25,7 +25,6 @@ exports.comments_list = (req, res, next) => __awaiter(void 0, void 0, void 0, fu
             path: "comments",
             populate: { path: "responses", model: "Comment" },
         }));
-        // console.log(comments)
         return res.status(200).send({ comments });
     }
     catch (error) {
@@ -36,7 +35,7 @@ exports.comments_list = (req, res, next) => __awaiter(void 0, void 0, void 0, fu
 // GET comment
 exports.comment_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const comment = yield commentModel_1.default.findById(req.params.id);
+        const comment = yield commentModel_1.default.findById(req.params.id).populate("user", "username");
         if (comment === null) {
             return res
                 .status(404)
@@ -126,12 +125,6 @@ exports.comment_update = [
                 upVotes: 1,
                 responses: 1,
             }));
-            if (previousComment === null) {
-                // If no community is found, send error;
-                return res
-                    .status(404)
-                    .send({ error: `No comment with id ${req.params.id} found` });
-            }
             // Create a new comment
             const newComment = new commentModel_1.default({
                 text: req.body.text,

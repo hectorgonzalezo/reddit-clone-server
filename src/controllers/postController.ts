@@ -1,6 +1,6 @@
 import Post from "../models/postModel";
-import url from 'url';
 import Community from "../models/communityModel";
+import User from '../models/userModel';
 import { QueryOptions } from "mongoose";
 import { Request, Response, NextFunction } from "express";
 import { body, validationResult } from "express-validator";
@@ -14,6 +14,7 @@ exports.posts_list = async (
 ) => {
   try {
     const community = req.query.community;
+    const user = req.query.user;
     let posts: IPost[];
     // if url has the community query string, look for posts only in that community
     if (community !== undefined) {
@@ -24,12 +25,31 @@ exports.posts_list = async (
       if (existingCommunity === null) {
         return res
           .status(404)
-          .send({ error: `No community with id ${community} found` }); 
+          .send({ error: `No community with id ${community} found` });
       }
       // if it does, look for posts inside that community
-      posts = await Post.find({ community }).populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
+      posts = await Post.find({ community })
+        .populate({ path: "community", select: "name users posts icon" })
+        .populate("user", "username");
+    } else if (user !== undefined) {
+      // look for posts posted by a user
+      // look if user exists
+      const existingUser = await User.findById(user, {
+        _id: 1,
+      });
+      if (existingUser === null) {
+        return res
+          .status(404)
+          .send({ error: `No User with id ${user} found` });
+      }
+      // if it does, look for posts inside that community
+      posts = await Post.find({ user })
+        .populate({ path: "community", select: "name users posts icon" })
+        .populate("user", "username");
     } else {
-      posts = await Post.find().populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
+      posts = await Post.find()
+        .populate({ path: "community", select: "name users posts icon" })
+        .populate("user", "username");
     }
     return res.status(200).send({ posts });
   } catch (error) {

@@ -20,7 +20,6 @@ exports.comments_list = async (
       path: "comments",
       populate: { path: "responses", model: "Comment" },
     })) as IPost;
-    // console.log(comments)
     return res.status(200).send({ comments });
   } catch (error) {
     return next(error);
@@ -35,7 +34,7 @@ exports.comment_detail = async (
   next: NextFunction
 ) => {
   try {
-    const comment = await Comment.findById(req.params.id);
+    const comment = await Comment.findById(req.params.id).populate("user", "username");
     if (comment === null) {
       return res
         .status(404)
@@ -127,14 +126,7 @@ exports.comment_update = [
         upVotes: 1,
         responses: 1,
       })) as IComment;
-
-      if (previousComment === null) {
-        // If no community is found, send error;
-        return res
-          .status(404)
-          .send({ error: `No comment with id ${req.params.id} found` });
-      }
-
+      
       // Create a new comment
       const newComment = new Comment({
         text: req.body.text,

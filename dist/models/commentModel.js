@@ -4,10 +4,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
+require("./userModel");
 const Schema = mongoose_1.default.Schema;
 const CommentSchema = new Schema({
     text: { type: String, minLength: 1, required: true },
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true, autopopulate: true },
     upVotes: { type: Number, required: false, default: 0 },
     responses: [
         { type: Schema.Types.ObjectId, ref: "Comment", autopopulate: true },

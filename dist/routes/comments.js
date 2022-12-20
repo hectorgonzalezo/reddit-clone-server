@@ -42,9 +42,16 @@ router.post("/", (req, res, next) => {
 // PUT/update a single comment
 router.put("/:id([a-zA-Z0-9]{24})", (req, res, next) => {
     passport_1.default.authenticate("jwt", { session: false }, (err, user) => __awaiter(void 0, void 0, void 0, function* () {
-        var _a, _b;
+        var _a, _b, _c;
         const comment = yield commentModel_1.default.findById(req.params.id, { user: 1 });
-        const isUserCreator = (comment === null || comment === void 0 ? void 0 : comment.user.toString()) === ((_a = user._id) === null || _a === void 0 ? void 0 : _a.toString());
+        if (comment === null) {
+            // If no community is found, send error;
+            return res
+                .status(404)
+                .send({ error: `No comment with id ${req.params.id} found` });
+        }
+        const commentUser = comment === null || comment === void 0 ? void 0 : comment.user;
+        const isUserCreator = ((_a = commentUser._id) === null || _a === void 0 ? void 0 : _a.toString()) === ((_b = user._id) === null || _b === void 0 ? void 0 : _b.toString());
         const isUserAdmin = user.permission === "admin";
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
             // if user is not admin, return error
@@ -56,16 +63,23 @@ router.put("/:id([a-zA-Z0-9]{24})", (req, res, next) => {
                 ],
             });
         }
-        req.body.userId = (_b = user._id) === null || _b === void 0 ? void 0 : _b.toString();
+        req.body.userId = (_c = user._id) === null || _c === void 0 ? void 0 : _c.toString();
         return next();
     }))(req, res, next);
 }, commentsController.comment_update);
 // DELETE a single comment
 router.delete("/:id([a-zA-Z0-9]{24})", (req, res, next) => {
     passport_1.default.authenticate("jwt", { session: false }, (err, user) => __awaiter(void 0, void 0, void 0, function* () {
-        var _a, _b;
+        var _a, _b, _c;
         const comment = yield commentModel_1.default.findById(req.params.id, { user: 1 });
-        const isUserCreator = (comment === null || comment === void 0 ? void 0 : comment.user.toString()) === ((_a = user._id) === null || _a === void 0 ? void 0 : _a.toString());
+        if (comment === null) {
+            // If no community is found, send error;
+            return res
+                .status(404)
+                .send({ error: `No comment with id ${req.params.id} found` });
+        }
+        const commentUser = comment === null || comment === void 0 ? void 0 : comment.user;
+        const isUserCreator = ((_a = commentUser._id) === null || _a === void 0 ? void 0 : _a.toString()) === ((_b = user._id) === null || _b === void 0 ? void 0 : _b.toString());
         const isUserAdmin = user.permission === "admin";
         if (err || !user || (!isUserCreator && !isUserAdmin)) {
             // if user is not admin, return error
@@ -77,7 +91,7 @@ router.delete("/:id([a-zA-Z0-9]{24})", (req, res, next) => {
                 ],
             });
         }
-        req.body.userId = (_b = user._id) === null || _b === void 0 ? void 0 : _b.toString();
+        req.body.userId = (_c = user._id) === null || _c === void 0 ? void 0 : _c.toString();
         return next();
     }))(req, res, next);
 }, commentsController.comment_delete);

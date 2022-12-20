@@ -108,7 +108,7 @@ describe("GET posts", () => {
     mockPost2 = new Post({
       title: "Mock post 2",
       text: "This is a mock post made for testing purposes",
-      user: userId,
+      user: '123456789b123456789e1234',
       community: mockCommunity2Id,
       url: 'http://mock.com',
       comments: [mockCommentId]
@@ -149,7 +149,6 @@ describe("GET posts", () => {
     // return both mock posts
     expect(res.body.posts.length).toBe(1);
     // populate user and community
-    expect(res.body.posts[0].user.username).toBe("mocka");
     expect(res.body.posts[0].community.name).toBe(mockCommunity.name);
   });
 
@@ -161,6 +160,30 @@ describe("GET posts", () => {
     // returns error if user is not authorized
     expect(res.body.error).toEqual(
       "No community with id 123456789a123456789b1234 found"
+    );
+  });
+
+  test("Get all posts made by user", async () => {
+    const res = await request(app).get(`/posts/?user=${userId}`);
+
+    // return ok status and json
+    expect(res.status).toEqual(200);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // return both mock posts
+    expect(res.body.posts.length).toBe(1);
+    // populate user and community
+    expect(res.body.posts[0].title).toBe(mockPost.title);
+    expect(res.body.posts[0].user._id).toBe(userId);
+  });
+
+  test("Get all posts in community throws error if invalid id", async () => {
+    const res = await request(app).get(`/posts/?user=123456789a123456789b1234`);
+
+    expect(res.status).toEqual(404);
+    expect(/.+\/json/.test(res.type)).toBe(true);
+    // returns error if user is not authorized
+    expect(res.body.error).toEqual(
+      "No User with id 123456789a123456789b1234 found"
     );
   });
 
