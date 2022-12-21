@@ -1262,7 +1262,7 @@ describe("User sign up", () => {
 
 
 describe("Vote for a particular community", () => {
-  beforeAll(async () => {
+  beforeEach(async () => {
     const hashedPassword = await bcrypt.hash("hashedPassword", 10);
   
     const adminUser = new User({
@@ -1328,7 +1328,7 @@ describe("Vote for a particular community", () => {
     mockPost2Id = post2._id.toString();
   });
   
-  afterAll(async () => {
+  afterEach(async () => {
     await User.findByIdAndDelete(adminUserId);
     await User.findByIdAndDelete(regularUserId);
     await User.findByIdAndDelete(userWithIconId);
@@ -1354,6 +1354,7 @@ describe("Vote for a particular community", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         vote: "upVote",
+        increase: 1,
       });
 
     // return ok status code
@@ -1362,6 +1363,7 @@ describe("Vote for a particular community", () => {
     // return user and token
     expect(res.body).toHaveProperty("user");
     expect(res.body.user.votes[mockPostId]).toBe("upVote");
+    expect(res.body.post.upVotes).toBe(1);
 
   });
 
@@ -1383,6 +1385,7 @@ describe("Vote for a particular community", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         vote: "",
+        increase: 0,
       });
 
     // return ok status code
@@ -1391,6 +1394,38 @@ describe("Vote for a particular community", () => {
     // return user and token
     expect(res.body).toHaveProperty("user");
     expect(res.body.user.votes[mockPostId]).toBe("");
+    expect(res.body.post.upVotes).toBe(0);
+
+  });
+
+  test("Down vote allowed", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "downVote",
+        increase: -1,
+      });
+
+    // return ok status code
+    expect(res.status).toEqual(200);
+
+    // return user and token
+    expect(res.body).toHaveProperty("user");
+    expect(res.body.user.votes[mockPostId]).toBe("downVote");
+    expect(res.body.post.upVotes).toBe(-1);
 
   });
 
@@ -1412,6 +1447,7 @@ describe("Vote for a particular community", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         vote: "upVote",
+        increase: 1,
       });
 
     const res2 = await request(app)
@@ -1420,6 +1456,7 @@ describe("Vote for a particular community", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         vote: "downVote",
+        increase: -2,
       });
 
     // return ok status code
@@ -1427,6 +1464,7 @@ describe("Vote for a particular community", () => {
 
     // return user and token
     expect(res2.body.user.votes[mockPostId]).toBe("downVote");
+    expect(res2.body.post.upVotes).toBe(-1);
   });
 
   test("Can vote for multiple posts", async () => {
@@ -1446,7 +1484,8 @@ describe("Vote for a particular community", () => {
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
       .send({
-        vote: "upVote"
+        vote: "upVote",
+        increase: 1,
       });
 
     const res2 = await request(app)
@@ -1454,7 +1493,8 @@ describe("Vote for a particular community", () => {
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
       .send({
-        vote: "downVote"
+        vote: "downVote",
+        increase: -1,
       });
 
     // return ok status code
@@ -1482,7 +1522,8 @@ describe("Vote for a particular community", () => {
       .put(`/${regularUserId}/vote/${mockPostId}`)
       .set("Content-Type", "application/json")
       .send({
-        vote: "upVote"
+        vote: "upVote",
+        increase: 1,
       });
 
     expect(res.status).toEqual(403);
@@ -1507,7 +1548,8 @@ describe("Vote for a particular community", () => {
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
       .send({
-        vote: "upVote"
+        vote: "upVote",
+        increase: 1,
       });
 
     expect(res.status).toEqual(403);
@@ -1533,6 +1575,7 @@ describe("Vote for a particular community", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         vote: "upVot",
+        increase: 1,
       });
 
     expect(res.status).toEqual(400);
@@ -1559,13 +1602,116 @@ describe("Vote for a particular community", () => {
       .put(`/${regularUserId}/vote/${mockPostId}`)
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${token}`)
-      .send({});
+      .send({ increase: -1 });
 
     expect(res.status).toEqual(400);
 
     expect(res.body.errors[0].msg).toEqual(
       "Invalid vote format"
     );
+  });
+
+
+  test("Throw error if increase is  not a number", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "upVote",
+        increase: 'asdf',
+      });
+
+    expect(res.status).toEqual(400);
+
+    expect(res.body.errors[0].msg).toEqual("Increase must be a number");
+  });
+
+  test("Throw error if increase is more than 2", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "upVote",
+        increase: 3,
+      });
+
+    expect(res.status).toEqual(400);
+
+    expect(res.body.errors[0].msg).toEqual("Invalid increase");
+  });
+
+  test("Throw error if increase is less than -2", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        vote: "upVote",
+        increase: -3,
+      });
+
+    expect(res.status).toEqual(400);
+
+    expect(res.body.errors[0].msg).toEqual("Invalid increase");
+  });
+
+
+  test("Throw error if vote is missing increase", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mocka",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+
+    const res = await request(app)
+      .put(`/${regularUserId}/vote/${mockPostId}`)
+      .set("Content-Type", "application/json")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ vote: "upVote"});
+
+    expect(res.status).toEqual(400);
+
+    expect(res.body.errors[0].msg).toEqual("Increase must be a number");
   });
 
   test("Throw error if vote id is invalid", async () => {
@@ -1586,6 +1732,7 @@ describe("Vote for a particular community", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         vote: "upVote",
+        increase: 1,
       });
 
     // return ok status code
@@ -1610,6 +1757,7 @@ describe("Vote for a particular community", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         vote: "upVote",
+        increase: 1,
       });
 
     // return ok status code

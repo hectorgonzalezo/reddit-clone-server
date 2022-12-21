@@ -299,7 +299,7 @@ exports.user_delete = (req: Request, res: Response, next: NextFunction) => {
 // Voting mechanism
 exports.user_vote = [
   body("vote")
-    .custom((value, { req }) => {
+    .custom((value) => {
       if (
         value === undefined ||
         (value !== "upVote" && value !== "downVote" && value !== "")
@@ -310,6 +310,17 @@ exports.user_vote = [
       return true;
     })
     .withMessage("Invalid vote format"),
+  body("increase")
+    .isNumeric()
+    .withMessage("Increase must be a number")
+    .custom((value) => {
+      if (value < -2 || value > 2) {
+        throw new Error("Invalid increase");
+      }
+      // Indicates the success of this synchronous custom validator
+      return true;
+    })
+    .withMessage("Invalid increase"),
   async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     // if validation didn't succeed
@@ -319,21 +330,27 @@ exports.user_vote = [
     }
     // If its valid
     try {
-      const { userId, postId } = req.params;
-      // if post doesn't exist, throw error
-      const post = await Post.findById(postId, { text: 1 });
-      if (post === null) {
-        return res.status(400).send({
-          errors: [{ msg: "Post doesn't exist" }],
-        }); 
-      }
-
       // option to return updated user
       const updateOption: QueryOptions & { rawResult: true } = {
         new: true,
         upsert: true,
         rawResult: true,
       };
+      const { userId, postId } = req.params;
+      
+
+      // increase upVotes by requested amount
+      const post = await Post.findByIdAndUpdate(
+        postId,
+        { $inc: { upVotes: req.body.increase } },
+        updateOption
+      );
+      // if post doesn't exist, throw error
+      if (post.lastErrorObject?.updatedExisting === false) {
+        return res.status(400).send({
+          errors: [{ msg: "Post doesn't exist" }],
+        });
+      }
 
       // location inside user document where vote will go
       const votePath = `votes.${postId}`;
@@ -342,10 +359,10 @@ exports.user_vote = [
       const updatedUser = await User.findByIdAndUpdate(
         userId,
         { $set: { [votePath]: req.body.vote } },
-        updateOption,
+        updateOption
       );
 
-      return res.json({ user: updatedUser.value });
+      return res.json({ user: updatedUser.value, post: post.value });
     } catch (err) {
       return next(err);
     }

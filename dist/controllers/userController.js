@@ -261,7 +261,7 @@ exports.user_delete = (req, res, next) => {
 // Voting mechanism
 exports.user_vote = [
     (0, express_validator_1.body)("vote")
-        .custom((value, { req }) => {
+        .custom((value) => {
         if (value === undefined ||
             (value !== "upVote" && value !== "downVote" && value !== "")) {
             throw new Error("Invalid vote format");
@@ -270,7 +270,19 @@ exports.user_vote = [
         return true;
     })
         .withMessage("Invalid vote format"),
+    (0, express_validator_1.body)("increase")
+        .isNumeric()
+        .withMessage("Increase must be a number")
+        .custom((value) => {
+        if (value < -2 || value > 2) {
+            throw new Error("Invalid increase");
+        }
+        // Indicates the success of this synchronous custom validator
+        return true;
+    })
+        .withMessage("Invalid increase"),
     (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+        var _a;
         const errors = (0, express_validator_1.validationResult)(req);
         // if validation didn't succeed
         if (!errors.isEmpty()) {
@@ -279,25 +291,26 @@ exports.user_vote = [
         }
         // If its valid
         try {
-            const { userId, postId } = req.params;
-            // if post doesn't exist, throw error
-            const post = yield postModel_1.default.findById(postId, { text: 1 });
-            if (post === null) {
-                return res.status(400).send({
-                    errors: [{ msg: "Post doesn't exist" }],
-                });
-            }
             // option to return updated user
             const updateOption = {
                 new: true,
                 upsert: true,
                 rawResult: true,
             };
+            const { userId, postId } = req.params;
+            // increase upVotes by requested amount
+            const post = yield postModel_1.default.findByIdAndUpdate(postId, { $inc: { upVotes: req.body.increase } }, updateOption);
+            // if post doesn't exist, throw error
+            if (((_a = post.lastErrorObject) === null || _a === void 0 ? void 0 : _a.updatedExisting) === false) {
+                return res.status(400).send({
+                    errors: [{ msg: "Post doesn't exist" }],
+                });
+            }
             // location inside user document where vote will go
             const votePath = `votes.${postId}`;
             // update user in database
             const updatedUser = yield userModel_1.default.findByIdAndUpdate(userId, { $set: { [votePath]: req.body.vote } }, updateOption);
-            return res.json({ user: updatedUser.value });
+            return res.json({ user: updatedUser.value, post: post.value });
         }
         catch (err) {
             return next(err);
