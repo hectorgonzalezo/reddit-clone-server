@@ -35,7 +35,7 @@ exports.posts_list = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
             }
             // if it does, look for posts inside that community
             posts = yield postModel_1.default.find({ community })
-                .populate({ path: "community", select: "name users posts icon" })
+                .populate({ path: "community", select: "name posts users icon" })
                 .populate("user", "username");
         }
         else if (user !== undefined) {
@@ -143,7 +143,10 @@ exports.post_create = [
             const newPost = new postModel_1.default(post);
             // Save it to database
             const savedPost = yield newPost.save();
-            return res.send({ post: savedPost });
+            const populatedPost = yield postModel_1.default.findById(savedPost._id)
+                .populate({ path: "community", select: "name posts users icon" })
+                .populate("user", "username");
+            return res.send({ post: populatedPost });
         }
         catch (err) {
             return next(err);

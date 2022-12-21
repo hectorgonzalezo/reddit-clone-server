@@ -29,7 +29,7 @@ exports.posts_list = async (
       }
       // if it does, look for posts inside that community
       posts = await Post.find({ community })
-        .populate({ path: "community", select: "name users posts icon" })
+        .populate({ path: "community", select: "name posts users icon" })
         .populate("user", "username");
     } else if (user !== undefined) {
       // look for posts posted by a user
@@ -143,8 +143,11 @@ exports.post_create = [
 
       // Save it to database
       const savedPost = await newPost.save();
+      const populatedPost = await Post.findById(savedPost._id)
+        .populate({ path: "community", select: "name posts users icon" })
+        .populate("user", "username");
 
-      return res.send({ post: savedPost });
+      return res.send({ post: populatedPost });
     } catch (err) {
       return next(err);
     }

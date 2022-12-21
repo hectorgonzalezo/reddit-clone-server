@@ -330,15 +330,15 @@ describe("POST/create posts", () => {
     // Return the correct  info
     expect(res.body.post.title).toBe(newPost.title);
     expect(res.body.post.text).toBe(newPost.text);
-    expect(res.body.post.community).toBe(newPost.community);
-    // assign current user to be the post creator
-    expect(res.body.post.user.toString()).toBe(userId);
     // upvotes is 0
     expect(res.body.post.upVotes).toBe(0);
     // comments is an empty array
     expect(res.body.post.comments).toEqual([]);
     // it has no url
     expect(res.body.post.url).toBe(undefined);
+    // user and community are populated
+    expect(res.body.post.community._id).toBe(newPost.community);
+    expect(res.body.post.user._id).toBe(userId);
   });
 
   test("URL is optional", async () => {
@@ -359,9 +359,9 @@ describe("POST/create posts", () => {
 
     // Return the correct  info
     expect(res.body.post.title).toBe(newPost.title);
-    expect(res.body.post.community).toBe(newPost.community);
+    expect(res.body.post.community._id).toBe(newPost.community);
     // assign current user to be the post creator
-    expect(res.body.post.user.toString()).toBe(userId);
+    expect(res.body.post.user._id).toBe(userId);
     // upvotes is 0
     expect(res.body.post.upVotes).toBe(0);
     // comments is an empty array
@@ -390,9 +390,9 @@ describe("POST/create posts", () => {
 
     // Return the correct  info
     expect(res.body.post.title).toBe(newPost.title);
-    expect(res.body.post.community).toBe(newPost.community);
+    expect(res.body.post.community._id).toBe(newPost.community);
     // assign current user to be the post creator
-    expect(res.body.post.user.toString()).toBe(userId);
+    expect(res.body.post.user._id).toBe(userId);
     // upvotes is 0
     expect(res.body.post.upVotes).toBe(0);
     // comments is an empty array
