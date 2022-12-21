@@ -337,20 +337,25 @@ exports.user_vote = [
         rawResult: true,
       };
       const { userId, postId } = req.params;
-      
 
       // increase upVotes by requested amount
-      const post = await Post.findByIdAndUpdate(
+      const updatedPost = await Post.findByIdAndUpdate(
         postId,
         { $inc: { upVotes: req.body.increase } },
         updateOption
       );
+
       // if post doesn't exist, throw error
-      if (post.lastErrorObject?.updatedExisting === false) {
+      if (updatedPost.lastErrorObject?.updatedExisting === false) {
         return res.status(400).send({
           errors: [{ msg: "Post doesn't exist" }],
         });
       }
+
+      // couldn't populate user and community, needed to display them on post
+      const post = await Post.findById(postId)
+        .populate({ path: "community", select: "name posts users icon" })
+        .populate("user", "username");
 
       // location inside user document where vote will go
       const votePath = `votes.${postId}`;
@@ -361,8 +366,8 @@ exports.user_vote = [
         { $set: { [votePath]: req.body.vote } },
         updateOption
       );
-
-      return res.json({ user: updatedUser.value, post: post.value });
+      
+      return res.json({ user: updatedUser.value, post });
     } catch (err) {
       return next(err);
     }

@@ -1356,7 +1356,7 @@ describe("Vote for a particular community", () => {
         vote: "upVote",
         increase: 1,
       });
-
+    
     // return ok status code
     expect(res.status).toEqual(200);
 
@@ -1364,6 +1364,10 @@ describe("Vote for a particular community", () => {
     expect(res.body).toHaveProperty("user");
     expect(res.body.user.votes[mockPostId]).toBe("upVote");
     expect(res.body.post.upVotes).toBe(1);
+
+    // community and user are populated in post
+    expect(res.body.post.community._id).toBe(fakeCommunityId);
+    expect(res.body.post.user._id).toBe(regularUserId);
 
   });
 

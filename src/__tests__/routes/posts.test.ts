@@ -339,6 +339,9 @@ describe("POST/create posts", () => {
     // user and community are populated
     expect(res.body.post.community._id).toBe(newPost.community);
     expect(res.body.post.user._id).toBe(userId);
+    // community is updated
+    
+    expect(res.body.post.community.posts[0]).toBe(res.body.post._id);
   });
 
   test("URL is optional", async () => {

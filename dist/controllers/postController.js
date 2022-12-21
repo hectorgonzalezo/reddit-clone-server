@@ -49,12 +49,12 @@ exports.posts_list = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
                     .status(404)
                     .send({ error: `No User with id ${user} found` });
             }
-            // if it does, look for posts inside that community
             posts = yield postModel_1.default.find({ user })
                 .populate({ path: "community", select: "name users posts icon" })
                 .populate("user", "username");
         }
         else {
+            // look for posts in a community
             posts = yield postModel_1.default.find()
                 .populate({ path: "community", select: "name users posts icon" })
                 .populate("user", "username");
@@ -69,7 +69,10 @@ exports.posts_list = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
 // GET post
 exports.post_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const post = yield postModel_1.default.findById(req.params.id).populate("user").populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
+        const post = yield postModel_1.default.findById(req.params.id)
+            .populate("user")
+            .populate({ path: "community", select: "name users posts icon" })
+            .populate("user", "username");
         if (post === null) {
             return res
                 .status(404)
@@ -143,9 +146,20 @@ exports.post_create = [
             const newPost = new postModel_1.default(post);
             // Save it to database
             const savedPost = yield newPost.save();
-            const populatedPost = yield postModel_1.default.findById(savedPost._id)
-                .populate({ path: "community", select: "name posts users icon" })
+            let populatedPost = yield postModel_1.default.findById(savedPost._id)
                 .populate("user", "username");
+            // option to return updated post
+            const updateOptions = {
+                new: true,
+                upsert: true,
+                rawResult: true,
+            };
+            let updatedCommunity;
+            if (populatedPost !== null && populatedPost.community !== undefined) {
+                // increase community posts
+                updatedCommunity = yield communityModel_1.default.findByIdAndUpdate(req.body.community, { $push: { posts: populatedPost._id } }, updateOptions);
+                populatedPost.community = updatedCommunity.value;
+            }
             return res.send({ post: populatedPost });
         }
         catch (err) {

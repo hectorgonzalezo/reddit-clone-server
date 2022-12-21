@@ -4,7 +4,7 @@ import User from '../models/userModel';
 import { QueryOptions } from "mongoose";
 import { Request, Response, NextFunction } from "express";
 import { body, validationResult } from "express-validator";
-import { IPost } from "src/types/models";
+import { ICommunity, IPost } from "src/types/models";
 
 // List all posts in database
 exports.posts_list = async (
@@ -42,11 +42,11 @@ exports.posts_list = async (
           .status(404)
           .send({ error: `No User with id ${user} found` });
       }
-      // if it does, look for posts inside that community
       posts = await Post.find({ user })
         .populate({ path: "community", select: "name users posts icon" })
         .populate("user", "username");
     } else {
+      // look for posts in a community
       posts = await Post.find()
         .populate({ path: "community", select: "name users posts icon" })
         .populate("user", "username");
@@ -65,9 +65,10 @@ exports.post_detail = async (
   next: NextFunction
 ) => {
   try {
-    const post = await Post.findById(req.params.id).populate(
-      "user"
-    ).populate({ path: "community", select: "name users posts icon" }).populate("user", "username");
+    const post = await Post.findById(req.params.id)
+      .populate("user")
+      .populate({ path: "community", select: "name users posts icon" })
+      .populate("user", "username");
     if (post === null) {
       return res
         .status(404)
@@ -143,10 +144,26 @@ exports.post_create = [
 
       // Save it to database
       const savedPost = await newPost.save();
-      const populatedPost = await Post.findById(savedPost._id)
-        .populate({ path: "community", select: "name posts users icon" })
+      let populatedPost = await Post.findById(savedPost._id)
         .populate("user", "username");
 
+      // option to return updated post
+      const updateOptions: QueryOptions & { rawResult: true } = {
+        new: true,
+        upsert: true,
+        rawResult: true,
+      };
+
+      let updatedCommunity;
+      if (populatedPost !== null && populatedPost.community !== undefined) {
+      // increase community posts
+        updatedCommunity = await Community.findByIdAndUpdate(
+          req.body.community,
+          { $push: { posts: populatedPost._id } },
+          updateOptions
+        );
+        populatedPost.community = updatedCommunity.value as ICommunity;
+      }
       return res.send({ post: populatedPost });
     } catch (err) {
       return next(err);
