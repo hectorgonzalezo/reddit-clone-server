@@ -4,18 +4,19 @@ import User from '../models/userModel';
 import { QueryOptions } from "mongoose";
 import { Request, Response, NextFunction } from "express";
 import { body, validationResult } from "express-validator";
-import { ICommunity, IPost } from "src/types/models";
+import { ICommunity, IPost, IUser } from "src/types/models";
 
 // List all posts in database
 exports.posts_list = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const community = req.query.community;
     const user = req.query.user;
     let posts: IPost[];
+
     // if url has the community query string, look for posts only in that community
     if (community !== undefined) {
       // look if community exists
@@ -31,20 +32,24 @@ exports.posts_list = async (
       posts = await Post.find({ community })
         .populate({ path: "community", select: "name posts users icon" })
         .populate("user", "username");
+        
     } else if (user !== undefined) {
       // look for posts posted by a user
       // look if user exists
-      const existingUser = await User.findById(user, {
-        _id: 1,
-      });
+      const results = await Promise.all([
+        User.findById(user, { _id: 1 }),
+        Post.find({ user })
+          .populate({ path: "community", select: "name users posts icon" })
+          .populate("user", "username"),
+      ]);
+      const existingUser = results[0];
+      posts = results[1] as IPost[];
+      // If user doesn't exist, throw error
       if (existingUser === null) {
         return res
           .status(404)
           .send({ error: `No User with id ${user} found` });
       }
-      posts = await Post.find({ user })
-        .populate({ path: "community", select: "name users posts icon" })
-        .populate("user", "username");
     } else {
       // look for posts in a community
       posts = await Post.find()
@@ -69,6 +74,7 @@ exports.post_detail = async (
       .populate("user")
       .populate({ path: "community", select: "name users posts icon" })
       .populate("user", "username");
+    // if post doesn't exist return error
     if (post === null) {
       return res
         .status(404)
@@ -144,8 +150,7 @@ exports.post_create = [
 
       // Save it to database
       const savedPost = await newPost.save();
-      let populatedPost = await Post.findById(savedPost._id)
-        .populate("user", "username");
+      let populatedPost = await savedPost.populate("user", "username");
 
       // option to return updated post
       const updateOptions: QueryOptions & { rawResult: true } = {

@@ -41,17 +41,20 @@ exports.posts_list = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
         else if (user !== undefined) {
             // look for posts posted by a user
             // look if user exists
-            const existingUser = yield userModel_1.default.findById(user, {
-                _id: 1,
-            });
+            const results = yield Promise.all([
+                userModel_1.default.findById(user, { _id: 1 }),
+                postModel_1.default.find({ user })
+                    .populate({ path: "community", select: "name users posts icon" })
+                    .populate("user", "username"),
+            ]);
+            const existingUser = results[0];
+            posts = results[1];
+            // If user doesn't exist, throw error
             if (existingUser === null) {
                 return res
                     .status(404)
                     .send({ error: `No User with id ${user} found` });
             }
-            posts = yield postModel_1.default.find({ user })
-                .populate({ path: "community", select: "name users posts icon" })
-                .populate("user", "username");
         }
         else {
             // look for posts in a community
@@ -73,6 +76,7 @@ exports.post_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, func
             .populate("user")
             .populate({ path: "community", select: "name users posts icon" })
             .populate("user", "username");
+        // if post doesn't exist return error
         if (post === null) {
             return res
                 .status(404)
@@ -146,8 +150,7 @@ exports.post_create = [
             const newPost = new postModel_1.default(post);
             // Save it to database
             const savedPost = yield newPost.save();
-            let populatedPost = yield postModel_1.default.findById(savedPost._id)
-                .populate("user", "username");
+            let populatedPost = yield savedPost.populate("user", "username");
             // option to return updated post
             const updateOptions = {
                 new: true,

@@ -71,11 +71,11 @@ exports.community_create = [
         }
         try {
             // Look for this same community
-            const previousCommunity = yield communityModel_1.default.findById(req.params.id, {
-                name: 1,
-            });
+            const [previousCommunity, existingCommunity] = yield Promise.all([
+                communityModel_1.default.findById(req.params.id, { name: 1 }),
+                communityModel_1.default.find({ name: req.body.name }, { name: 1 }),
+            ]);
             // Look for community in database
-            const existingCommunity = yield communityModel_1.default.find({ name: req.body.name }, { name: 1 });
             // if a community exist with that name, and it's not the community to be updated, send error
             if (existingCommunity.length !== 0 &&
                 req.body.name !== (previousCommunity === null || previousCommunity === void 0 ? void 0 : previousCommunity.name)) {
@@ -137,13 +137,11 @@ exports.community_update = [
         }
         try {
             // Look for this same community
-            const previousCommunity = yield communityModel_1.default.findById(req.params.id, {
-                name: 1,
-                users: 1,
-                posts: 1,
-            });
-            // Look for community in database
-            const existingCommunity = yield communityModel_1.default.find({ name: req.body.name }, { name: 1 });
+            const [previousCommunity, existingCommunity] = yield Promise.all([
+                communityModel_1.default.findById(req.params.id, { name: 1, users: 1, posts: 1 }),
+                // Look for community namein database
+                communityModel_1.default.find({ name: req.body.name }, { name: 1 }),
+            ]);
             // if a community exist with that name, and it's not the community to be updated, send error
             if (existingCommunity.length !== 0 &&
                 req.body.name !== (previousCommunity === null || previousCommunity === void 0 ? void 0 : previousCommunity.name)) {
@@ -223,10 +221,12 @@ exports.community_subscribe = (req, res, next) => __awaiter(void 0, void 0, void
             upsert: true,
             rawResult: true,
         };
-        // Add user to community
-        const community = yield communityModel_1.default.findByIdAndUpdate(communityId, { $addToSet: { users: userId } }, updateOptions);
-        // add community to user
-        const user = yield userModel_1.default.findByIdAndUpdate(userId, { $addToSet: { communities: communityId } }, updateOptions);
+        const [community, user] = yield Promise.all([
+            // Add user to community
+            communityModel_1.default.findByIdAndUpdate(communityId, { $addToSet: { users: userId } }, updateOptions),
+            // add community to user
+            userModel_1.default.findByIdAndUpdate(userId, { $addToSet: { communities: communityId } }, updateOptions),
+        ]);
         // if user doesn't exist, send error
         if (user === null) {
             return res.status(404).send({ error: `No user with id ${userId} found` });
@@ -258,16 +258,18 @@ exports.community_unSubscribe = (req, res, next) => __awaiter(void 0, void 0, vo
                 .status(404)
                 .send({ error: `No community with id ${communityId} found` });
         }
-        // Add user to community
-        const community = yield communityModel_1.default.findByIdAndUpdate(communityId, { $pull: { users: userId } }, updateOptions);
+        const [community, user] = yield Promise.all([
+            // Add user to community
+            communityModel_1.default.findByIdAndUpdate(communityId, { $pull: { users: userId } }, updateOptions),
+            // add community to user
+            userModel_1.default.findByIdAndUpdate(userId, { $pull: { communities: communityId } }, updateOptions),
+        ]);
         // if community doesn't exist, send error
         if (community === null) {
             return res
                 .status(404)
                 .send({ error: `No community with id ${communityId} found` });
         }
-        // add community to user
-        const user = yield userModel_1.default.findByIdAndUpdate(userId, { $pull: { communities: communityId } }, updateOptions);
         // if community doesn't exist, send error
         if (user === null) {
             return res.status(404).send({ error: `No user with id ${userId} found` });

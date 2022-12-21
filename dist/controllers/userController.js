@@ -106,18 +106,19 @@ exports.user_sign_up = [
         try {
             // encrypt password
             const hashedPassword = yield bcryptjs_1.default.hash(req.body.password, 10);
-            // look in db for a user with the same username
-            const existingUser = yield userModel_1.default.find({ username: req.body.username });
-            // if one exists, send error
+            // look in db for a user with the same username or email
+            const [existingUser, existingEmail] = yield Promise.all([
+                userModel_1.default.find({ username: req.body.username }),
+                userModel_1.default.find({ email: req.body.email }),
+            ]);
+            // if username exists, send error
             if (existingUser.length !== 0) {
                 // return error and user data filled so far
                 return res.status(400).send({
                     errors: [{ msg: "Username already exists", user: req.body }],
                 });
             }
-            // look in db for a user with the same email
-            const existingEmail = yield userModel_1.default.find({ email: req.body.email });
-            // if one exists, send error
+            // if email exists, send error
             if (existingEmail.length !== 0) {
                 // return error and user data filled so far
                 return res.status(400).send({
@@ -185,14 +186,15 @@ exports.user_update = [
         }
         // If its valid
         try {
-            // look for previous email and username in user
-            const previousUser = yield userModel_1.default.findById(req.params.id, {
-                username: 1,
-                email: 1,
-            });
-            // look in db for a user with the same username
-            const existingUser = yield userModel_1.default.find({ username: req.body.username });
-            // if one exists and its not the user itself, send error
+            const [previousUser, existingUser, existingEmail] = yield Promise.all([
+                // look for previous email and username in user
+                userModel_1.default.findById(req.params.id, { username: 1, email: 1 }),
+                // look in db for a user with the same username
+                userModel_1.default.find({ username: req.body.username }),
+                // look in db for a user with the same email
+                userModel_1.default.find({ email: req.body.email }),
+            ]);
+            // if username exists and its not the user itself, send error
             if (existingUser.length !== 0 &&
                 req.body.username !== (previousUser === null || previousUser === void 0 ? void 0 : previousUser.username)) {
                 // return error and user data filled so far
@@ -200,9 +202,7 @@ exports.user_update = [
                     errors: [{ msg: "Username already exists", user: req.body }],
                 });
             }
-            // look in db for a user with the same email
-            const existingEmail = yield userModel_1.default.find({ email: req.body.email });
-            // if one exists and its not the user itself, send error
+            // if email exists and its not the user itself, send error
             if (existingEmail.length !== 0 &&
                 req.body.email !== (previousUser === null || previousUser === void 0 ? void 0 : previousUser.email)) {
                 // return error and user data filled so far

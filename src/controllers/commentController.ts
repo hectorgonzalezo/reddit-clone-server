@@ -10,7 +10,7 @@ import { QueryOptions } from "mongoose";
 exports.comments_list = async (
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     // Look for post and extract comments
@@ -31,10 +31,13 @@ exports.comments_list = async (
 exports.comment_detail = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    const comment = await Comment.findById(req.params.id).populate("user", "username");
+    const comment = await Comment.findById(req.params.id).populate(
+      "user",
+      "username",
+    );
     if (comment === null) {
       return res
         .status(404)
@@ -161,7 +164,7 @@ exports.comment_update = [
 exports.comment_delete = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const comment = await Comment.findByIdAndDelete(req.params.id);

@@ -15,7 +15,7 @@ const TOKEN_EXPIRATION = "24h";
 exports.user_detail = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const user = await User.findById(req.params.id, {
@@ -69,11 +69,11 @@ exports.user_log_in = [
           const token = jwt.sign(
             user.toJSON(),
             process.env.AUTH_SECRET as string,
-            { expiresIn: TOKEN_EXPIRATION }
+            { expiresIn: TOKEN_EXPIRATION },
           );
           return res.json({ user, token });
         });
-      }
+      },
     )(req, res);
   },
 ];
@@ -111,10 +111,13 @@ exports.user_sign_up = [
       // encrypt password
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-      // look in db for a user with the same username
-      const existingUser = await User.find({ username: req.body.username });
+      // look in db for a user with the same username or email
+      const [existingUser, existingEmail] = await Promise.all([
+        User.find({ username: req.body.username }),
+        User.find({ email: req.body.email }),
+      ]);
 
-      // if one exists, send error
+      // if username exists, send error
       if (existingUser.length !== 0) {
         // return error and user data filled so far
         return res.status(400).send({
@@ -122,10 +125,7 @@ exports.user_sign_up = [
         });
       }
 
-      // look in db for a user with the same email
-      const existingEmail = await User.find({ email: req.body.email });
-
-      // if one exists, send error
+      // if email exists, send error
       if (existingEmail.length !== 0) {
         // return error and user data filled so far
         return res.status(400).send({
@@ -150,7 +150,7 @@ exports.user_sign_up = [
       const token = jwt.sign(
         newUser.toJSON(),
         process.env.AUTH_SECRET as string,
-        { expiresIn: TOKEN_EXPIRATION }
+        { expiresIn: TOKEN_EXPIRATION },
       );
       return res.json({ user, token });
     } catch (err) {
@@ -200,16 +200,17 @@ exports.user_update = [
 
     // If its valid
     try {
-      // look for previous email and username in user
-      const previousUser = await User.findById(req.params.id, {
-        username: 1,
-        email: 1,
-      }) as IUser;
 
-      // look in db for a user with the same username
-      const existingUser = await User.find({ username: req.body.username });
+      const [previousUser, existingUser, existingEmail] = await Promise.all([
+        // look for previous email and username in user
+        User.findById(req.params.id, { username: 1, email: 1 }),
+        // look in db for a user with the same username
+        User.find({ username: req.body.username }),
+        // look in db for a user with the same email
+        User.find({ email: req.body.email }),
+      ]);
 
-      // if one exists and its not the user itself, send error
+      // if username exists and its not the user itself, send error
       if (
         existingUser.length !== 0 &&
         req.body.username !== previousUser?.username
@@ -220,10 +221,8 @@ exports.user_update = [
         });
       }
 
-      // look in db for a user with the same email
-      const existingEmail = await User.find({ email: req.body.email });
 
-      // if one exists and its not the user itself, send error
+      // if email exists and its not the user itself, send error
       if (
         existingEmail.length !== 0 &&
         req.body.email !== previousUser?.email
@@ -274,7 +273,7 @@ exports.user_update = [
       const updatedUser = await User.findByIdAndUpdate(
         req.params.id,
         newUser,
-        updateOption
+        updateOption,
       );
 
       return res.json({ user: updatedUser.value });
@@ -342,7 +341,7 @@ exports.user_vote = [
       const updatedPost = await Post.findByIdAndUpdate(
         postId,
         { $inc: { upVotes: req.body.increase } },
-        updateOption
+        updateOption,
       );
 
       // if post doesn't exist, throw error
@@ -364,7 +363,7 @@ exports.user_vote = [
       const updatedUser = await User.findByIdAndUpdate(
         userId,
         { $set: { [votePath]: req.body.vote } },
-        updateOption
+        updateOption,
       );
       
       return res.json({ user: updatedUser.value, post });

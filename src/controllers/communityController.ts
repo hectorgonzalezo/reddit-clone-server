@@ -9,7 +9,7 @@ import { ICommunity } from "src/types/models";
 exports.communities_list = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const communities = await Community.find();
@@ -24,7 +24,7 @@ exports.communities_list = async (
 exports.community_detail = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const community = await Community.findById(req.params.id).populate("users");
@@ -75,14 +75,11 @@ exports.community_create = [
     }
     try {
       // Look for this same community
-      const previousCommunity = await Community.findById(req.params.id, {
-        name: 1,
-      });
+      const [previousCommunity, existingCommunity] = await Promise.all([
+        Community.findById(req.params.id, { name: 1 }),
+        Community.find({ name: req.body.name }, { name: 1 }),
+      ]);
       // Look for community in database
-      const existingCommunity = await Community.find(
-        { name: req.body.name },
-        { name: 1 }
-      );
       // if a community exist with that name, and it's not the community to be updated, send error
       if (
         existingCommunity.length !== 0 &&
@@ -157,16 +154,11 @@ exports.community_update = [
     }
     try {
       // Look for this same community
-      const previousCommunity = await Community.findById(req.params.id, {
-        name: 1,
-        users: 1,
-        posts: 1,
-      });
-      // Look for community in database
-      const existingCommunity = await Community.find(
-        { name: req.body.name },
-        { name: 1 }
-      );
+      const [previousCommunity, existingCommunity] = await Promise.all([
+        Community.findById(req.params.id, { name: 1, users: 1, posts: 1 }),
+        // Look for community namein database
+        Community.find({ name: req.body.name }, { name: 1 }),
+      ]);
       // if a community exist with that name, and it's not the community to be updated, send error
       if (
         existingCommunity.length !== 0 &&
@@ -213,7 +205,7 @@ exports.community_update = [
       const updatedCommunity = await Community.findByIdAndUpdate(
         req.params.id,
         newCommunity,
-        updateOptions
+        updateOptions,
       );
       res.send({ community: updatedCommunity.value });
       return;
@@ -228,7 +220,7 @@ exports.community_update = [
 exports.community_delete = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const community = await Community.findByIdAndDelete(req.params.id);
@@ -249,7 +241,7 @@ exports.community_delete = async (
 exports.community_subscribe = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     
@@ -270,19 +262,20 @@ exports.community_subscribe = async (
       upsert: true,
       rawResult: true,
     };
-    // Add user to community
-    const community = await Community.findByIdAndUpdate(
-      communityId,
-      { $addToSet: { users: userId } },
-      updateOptions
-    );
-
-    // add community to user
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $addToSet: { communities: communityId } },
-      updateOptions
-    );  
+    const [community, user] = await Promise.all([
+      // Add user to community
+      Community.findByIdAndUpdate(
+        communityId,
+        { $addToSet: { users: userId } },
+        updateOptions,
+      ),
+      // add community to user
+      User.findByIdAndUpdate(
+        userId,
+        { $addToSet: { communities: communityId } },
+        updateOptions,
+      ),
+    ]);
 
     // if user doesn't exist, send error
     if (user === null) {
@@ -303,7 +296,7 @@ exports.community_subscribe = async (
 exports.community_unSubscribe = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { communityId, userId } = req.params;
@@ -322,12 +315,20 @@ exports.community_unSubscribe = async (
         .send({ error: `No community with id ${communityId} found` });
     }
 
-    // Add user to community
-    const community = await Community.findByIdAndUpdate(
-      communityId,
-      { $pull: { users: userId } },
-      updateOptions
-    );
+    const [community, user] = await Promise.all([
+      // Add user to community
+      Community.findByIdAndUpdate(
+        communityId,
+        { $pull: { users: userId } },
+        updateOptions,
+      ),
+      // add community to user
+      User.findByIdAndUpdate(
+        userId,
+        { $pull: { communities: communityId } },
+        updateOptions,
+      ),
+    ]);
  
     // if community doesn't exist, send error
     if (community === null) {
@@ -336,13 +337,6 @@ exports.community_unSubscribe = async (
         .send({ error: `No community with id ${communityId} found` });
 
     }
-
-    // add community to user
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $pull: { communities: communityId } },
-      updateOptions
-    );  
 
     // if community doesn't exist, send error
     if (user === null) {
