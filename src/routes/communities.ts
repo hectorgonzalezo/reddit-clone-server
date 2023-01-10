@@ -1,7 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
 import passport from "passport";
 import Community from "../models/communityModel";
-import User from '../models/userModel';
 const communitiesController = require("../controllers/communityController");
 const router = express.Router();
 import { IUser } from "src/types/models";
