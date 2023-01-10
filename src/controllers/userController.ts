@@ -26,7 +26,10 @@ exports.user_detail = async (
       votes: 1,
     }).populate("communities");
     // return queried user as json
-    return res.json({ user });
+    if (user !== null) {
+      return res.json({ user });
+    }
+    return res.status(404).send('User not found');
   } catch (err) {
     return next(err);
   }

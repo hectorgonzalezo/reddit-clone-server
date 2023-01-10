@@ -160,6 +160,27 @@ afterAll(async () => {
     // user doesn't have icon
     expect(res.body.user.icon).toBe("http://fakeurl.com/icon");
   });
+
+  test("Return error if user doens't exist", async () => {
+    // log in and get token
+    const logIn = await request(app)
+      .post("/log-in")
+      .set("Content-Type", "application/json")
+      .send({
+        username: "mock",
+        password: "hashedPassword",
+      });
+
+    const { token } = logIn.body;
+    const userId = logIn.body.user._id;
+
+    // query user with admin token
+    const res = await request(app)
+      .get(`/123456789a123456789b1234`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toEqual(404);
+  });
 });
 
 describe("User update", () => {
