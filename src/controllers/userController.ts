@@ -8,7 +8,6 @@ import User from "../models/userModel";
 import Post from '../models/postModel';
 import { IUser } from "src/types/models";
 
-const TOKEN_EXPIRATION = "24h";
 
 // Display details about an individual user
 // GET user
@@ -72,7 +71,6 @@ exports.user_log_in = [
           const token = jwt.sign(
             user.toJSON(),
             process.env.AUTH_SECRET as string,
-            { expiresIn: TOKEN_EXPIRATION },
           );
           return res.json({ user, token });
         });
@@ -153,7 +151,6 @@ exports.user_sign_up = [
       const token = jwt.sign(
         newUser.toJSON(),
         process.env.AUTH_SECRET as string,
-        { expiresIn: TOKEN_EXPIRATION },
       );
       return res.json({ user, token });
     } catch (err) {

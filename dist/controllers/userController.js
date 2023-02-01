@@ -18,7 +18,6 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const express_validator_1 = require("express-validator");
 const userModel_1 = __importDefault(require("../models/userModel"));
 const postModel_1 = __importDefault(require("../models/postModel"));
-const TOKEN_EXPIRATION = "24h";
 // Display details about an individual user
 // GET user
 exports.user_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
@@ -31,7 +30,10 @@ exports.user_detail = (req, res, next) => __awaiter(void 0, void 0, void 0, func
             votes: 1,
         }).populate("communities");
         // return queried user as json
-        return res.json({ user });
+        if (user !== null) {
+            return res.json({ user });
+        }
+        return res.status(404).send('User not found');
     }
     catch (err) {
         return next(err);
@@ -68,7 +70,7 @@ exports.user_log_in = [
                 }
                 // generate a signed son web token with the contents of user object and return it in the response
                 // user must be converted to JSON
-                const token = jsonwebtoken_1.default.sign(user.toJSON(), process.env.AUTH_SECRET, { expiresIn: TOKEN_EXPIRATION });
+                const token = jsonwebtoken_1.default.sign(user.toJSON(), process.env.AUTH_SECRET);
                 return res.json({ user, token });
             });
         })(req, res);
@@ -138,7 +140,7 @@ exports.user_sign_up = [
             const user = yield newUser.save();
             // generate a signed son web token with the contents of user object and return it in the response
             // user must be converted to JSON
-            const token = jsonwebtoken_1.default.sign(newUser.toJSON(), process.env.AUTH_SECRET, { expiresIn: TOKEN_EXPIRATION });
+            const token = jsonwebtoken_1.default.sign(newUser.toJSON(), process.env.AUTH_SECRET);
             return res.json({ user, token });
         }
         catch (err) {
