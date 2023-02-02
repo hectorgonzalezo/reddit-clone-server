@@ -2,7 +2,7 @@ import Comment from "../models/commentModel";
 import Post from "../models/postModel";
 import { body, validationResult } from "express-validator";
 import { Request, Response, NextFunction } from "express";
-import { ExtendedRequest } from "src/types/extendedRequest";
+import { ExtendedRequest } from "src/types/ExtendedRequest";
 import { IComment, IPost } from "src/types/models";
 import { QueryOptions } from "mongoose";
 

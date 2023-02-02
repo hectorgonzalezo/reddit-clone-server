@@ -1,5 +1,5 @@
 import createError, { HttpError } from "http-errors";
-import { ExtendedRequest } from "./types/extendedRequest";
+import { ExtendedRequest } from "./types/ExtendedRequest";
 import express, { Request, Response, NextFunction } from "express";
 const path = require("path");
 const cookieParser = require("cookie-parser");
