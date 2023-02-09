@@ -8,7 +8,7 @@ import Community from "../../models/communityModel";
 import Post from "../../models/postModel";
 import User from "../../models/userModel";
 import Comment from "../../models/commentModel";
-import { ExtendedRequest } from "../../types/extendedRequest";
+import { ExtendedRequest } from "../../types/ExtendedRequest";
 import { IComment, ICommunity } from "../../types/models";
 import { IPost } from "../../types/models";
 
