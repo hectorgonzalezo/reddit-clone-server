@@ -15,7 +15,7 @@ By [Héctor González Orozco](https://github.com/hectorgonzalezo)
 
 ## :pager: API URL
 
-Hosted at: [https://reddit-server.onrender.com/](https://reddit-server.onrender.com/)
+Hosted at: [https://reddit-server.herokuapp.com/](https://reddit-server.herokuapp.com/)
 
 ## :rocket: Features
 
